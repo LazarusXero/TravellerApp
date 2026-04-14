@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id                  Int                @id @default(autoincrement())
+  name                String
+  role                String             @default("player")
+  pin_hash            String
+  active_character_id Int?
+  active_character    Character?         @relation("ActiveCharacter", fields: [active_character_id], references: [id])
+  characters          Character[]        @relation("OwnedCharacters")
+  messages_sent       Message[]          @relation("SentMessages")
+  messages_received   Message[]          @relation("ReceivedMessages")
+  created_at          DateTime           @default(now())
+}
+
+model Character {
+  id                  Int                @id @default(autoincrement())
+  player_id           Int
+  player              Player             @relation("OwnedCharacters", fields: [player_id], references: [id])
+  name                String
+  portrait_url        String?
+  description         String?
+  str                 Int                @default(7)
+  dex                 Int                @default(7)
+  end                 Int                @default(7)
+  int                 Int                @default(7)
+  edu                 Int                @default(7)
+  soc                 Int                @default(7)
+  skills              String             @default("{}")
+  credits             Int                @default(0)
+  actions_spent_day   Int?
+  action_type_today   String?
+  salary_amount       Int?
+  salary_interval_days Int?
+  last_salary_day     Int?
+  skill_points        Int                @default(0)
+  total_sp_earned     Int                @default(0)
+  active_for_players  Player[]           @relation("ActiveCharacter")
+  inventory           InventoryItem[]
+  cargo_hold          CargoHold[]
+  skill_training      SkillTraining[]
+  maintenance_logs    MaintenanceLog[]
+  world_notes         WorldNote[]
+  investment_actions  InvestmentAction[]
+  event_logs          EventLog[]
+  skill_point_awards  SkillPointAward[]
+  crew_hired          CrewMember[]
+  created_at          DateTime           @default(now())
+}
+
+model Game {
+  id                      Int      @id @default(autoincrement())
+  name                    String
+  current_world_id        Int?
+  current_world           World?   @relation(fields: [current_world_id], references: [id])
+  in_jump_space           Boolean  @default(false)
+  day                     Int      @default(1)
+  milieu                  String?
+  is_drinax               Boolean  @default(true)
+  imperium_standing       Int      @default(0)
+  hierate_standing        Int      @default(-5)
+  imperium_bounty         Int?
+  hierate_bounty          Int?
+  combat_round            Int      @default(0)
+  created_at              DateTime @default(now())
+}
+
+model Item {
+  id                    Int              @id @default(autoincrement())
+  name                  String
+  type                  String
+  sub_type              String
+  tech_level            String
+  law_level             String?
+  cost                  Int
+  cost_unit             String           @default("Cr")
+  mass                  Float?
+  mass_unit             String           @default("kg")
+  black_market_category String?
+  damage                String?
+  protection            String?
+  traits                String?
+  range                 String?
+  required_skill        String?
+  reference             String?
+  active_in_game        Boolean          @default(false)
+  world_inventory       WorldInventory[]
+  inventory_items       InventoryItem[]
+  created_at            DateTime         @default(now())
+}
+
+model SkillTraining {
+  id                    Int       @id @default(autoincrement())
+  character_id          Int
+  character             Character @relation(fields: [character_id], references: [id])
+  skill_name            String
+  training_days_applied Int       @default(0)
+  is_active             Boolean   @default(true)
+  started_day           Int
+  created_at            DateTime  @default(now())
+}
+
+model SkillPointAward {
+  id             Int       @id @default(autoincrement())
+  character_id   Int
+  character      Character @relation(fields: [character_id], references: [id])
+  points_awarded Int
+  source         String
+  skill_name     String?
+  reason         String?
+  game_day       Int
+  created_at     DateTime  @default(now())
+}
+
+model World {
+  id                    Int              @id @default(autoincrement())
+  name                  String
+  hex_code              String
+  port_type             String
+  size                  String
+  atmosphere            String
+  hydrographics         String
+  population            String
+  government            String
+  law                   String
+  technology            String
+  trade_codes           String?
+  allegiance            String?
+  port_attitude         String?
+  naval_base            Boolean          @default(false)
+  key_system            Boolean          @default(false)
+  secure_world          Boolean          @default(false)
+  dangerous_world       Boolean          @default(false)
+  is_hidden             Boolean          @default(false)
+  is_aslan_port         Boolean          @default(false)
+  total_donations_cr    Int              @default(0)
+  last_supplier_search_day Int?
+  crew_available        Boolean          @default(false)
+  sector                String?
+  subsector             String?
+  notes                 String?
+  game_as_current       Game[]
+  world_inventory       WorldInventory[]
+  world_notes           WorldNote[]
+  npcs                  NPC[]
+  factions              Faction[]
+  piracy_effects        PiracyEffect[]
+  spec_cargo            SpecCargo[]
+  freight_origin        FreightLot[]     @relation("FreightOrigin")
+  freight_destination   FreightLot[]     @relation("FreightDestination")
+  passenger_origin      Passenger[]      @relation("PassengerOrigin")
+  passenger_destination Passenger[]      @relation("PassengerDestination")
+  cargo_sold_here       CargoHold[]      @relation("CargoSoldAt")
+  event_logs            EventLog[]
+  created_at            DateTime         @default(now())
+}
+
+model WorldInventory {
+  id                Int      @id @default(autoincrement())
+  world_id          Int
+  world             World    @relation(fields: [world_id], references: [id])
+  item_id           Int
+  item              Item     @relation(fields: [item_id], references: [id])
+  visit_day         Int
+  roll              Int
+  effective_roll    Int
+  bm_roll           Int?
+  effective_bm_roll Int?
+  bm_searcher_name  String?
+  bm_search_day     Int?
+  quantity_available Int     @default(1)
+  gm_override       Boolean  @default(false)
+  created_at        DateTime @default(now())
+}
+
+model WorldNote {
+  id           Int       @id @default(autoincrement())
+  world_id     Int
+  world        World     @relation(fields: [world_id], references: [id])
+  character_id Int
+  character    Character @relation(fields: [character_id], references: [id])
+  note         String
+  updated_at   DateTime  @updatedAt
+}
+
+model NPC {
+  id                 Int                @id @default(autoincrement())
+  world_id           Int?
+  world              World?             @relation(fields: [world_id], references: [id])
+  faction_id         Int?
+  faction            Faction?           @relation(fields: [faction_id], references: [id])
+  name               String
+  description        String?
+  occupation         String?
+  alignment          String?
+  reports_to_type    String?
+  reports_to_id      Int?
+  mission_text       String?
+  total_investment   Int                @default(0)
+  soc                Int                @default(7)
+  ac                 Int                @default(0)
+  last_investment_week Int?
+  skills             String             @default("{}")
+  portrait_url       String?
+  is_revealed        Boolean            @default(false)
+  is_hireable        Boolean            @default(false)
+  hire_cost          Int?
+  party_alignment    String?
+  investment_actions InvestmentAction[] @relation("NPCInvestments")
+  created_at         DateTime           @default(now())
+}
+
+model Faction {
+  id                 Int                @id @default(autoincrement())
+  name               String
+  type               String
+  alignment          String?
+  size_code          Int
+  world_id           Int
+  world              World              @relation(fields: [world_id], references: [id])
+  interaction_cost   Int                @default(0)
+  total_investment   Int                @default(0)
+  mission_text       String?
+  portrait_url       String?
+  is_revealed        Boolean            @default(false)
+  party_alignment    String?
+  npcs               NPC[]
+  investment_actions InvestmentAction[] @relation("FactionInvestments")
+  created_at         DateTime           @default(now())
+}
+
+model PiracyEffect {
+  id                  Int      @id @default(autoincrement())
+  world_id            Int
+  world               World    @relation(fields: [world_id], references: [id])
+  source_events       String   @default("[]")
+  effect_start_level  Float
+  effect_day_start    Int
+  decay_rate          Float
+  buy_price_modifier  Float    @default(0)
+  sell_price_modifier Float    @default(0)
+  updated_at          DateTime @updatedAt
+}
+
+model EncounterTable {
+  id              Int      @id @default(autoincrement())
+  name            String
+  world_type      String
+  environment     String?
+  min_roll        Int
+  max_roll        Int
+  description     String
+  generates_npc   Boolean  @default(false)
+  npc_template    String?
+  source          String?
+  created_at      DateTime @default(now())
+}
+
+model SpecCargo {
+  id                    Int         @id @default(autoincrement())
+  world_id              Int
+  world                 World       @relation(fields: [world_id], references: [id])
+  trade_good            String
+  trade_code            String
+  tons_available        Int
+  base_price_per_ton    Int
+  visit_day             Int
+  tons_taken            Int         @default(0)
+  supplier_type         String      @default("standard")
+  search_attempts_this_month Int    @default(0)
+  rejected_day          Int?
+  purchase_pct          Int?
+  is_illegal            Boolean     @default(false)
+  cargo_hold            CargoHold[]
+  created_at            DateTime    @default(now())
+}
+
+model CargoHold {
+  id                     Int       @id @default(autoincrement())
+  spec_cargo_id          Int
+  spec_cargo             SpecCargo @relation(fields: [spec_cargo_id], references: [id])
+  character_id           Int
+  character              Character @relation(fields: [character_id], references: [id])
+  tons_purchased         Int
+  purchase_price_per_ton Int
+  purchased_day          Int
+  sold_at_world_id       Int?
+  sold_at_world          World?    @relation("CargoSoldAt", fields: [sold_at_world_id], references: [id])
+  sale_price_per_ton     Int?
+  sale_pct               Int?
+  buyer_rejected_day     Int?
+  sold_day               Int?
+  created_at             DateTime  @default(now())
+}
+
+model FreightLot {
+  id                   Int      @id @default(autoincrement())
+  origin_world_id      Int
+  origin_world         World    @relation("FreightOrigin", fields: [origin_world_id], references: [id])
+  destination_world_id Int
+  destination_world    World    @relation("FreightDestination", fields: [destination_world_id], references: [id])
+  tons                 Int
+  freight_class        String
+  fee_per_ton          Int
+  is_hazardous         Boolean  @default(false)
+  status               String   @default("available")
+  generated_day        Int
+  accepted_day         Int?
+  delivered_day        Int?
+  gm_qty_override      Boolean  @default(false)
+  created_at           DateTime @default(now())
+}
+
+model Passenger {
+  id                   Int      @id @default(autoincrement())
+  origin_world_id      Int
+  origin_world         World    @relation("PassengerOrigin", fields: [origin_world_id], references: [id])
+  destination_world_id Int
+  destination_world    World    @relation("PassengerDestination", fields: [destination_world_id], references: [id])
+  name                 String
+  berth_class          String
+  passage_fee          Int
+  status               String   @default("available")
+  generated_day        Int
+  accepted_day         Int?
+  delivered_day        Int?
+  incident_notes       String?
+  luggage_tons         Float    @default(0)
+  gm_qty_override      Boolean  @default(false)
+  created_at           DateTime @default(now())
+}
+
+model InventoryItem {
+  id              Int        @id @default(autoincrement())
+  item_id         Int
+  item            Item       @relation(fields: [item_id], references: [id])
+  owner_type      String
+  owner_id        Int
+  character       Character? @relation(fields: [owner_id], references: [id])
+  quantity        Int        @default(1)
+  equipped        Boolean    @default(false)
+  is_hidden       Boolean    @default(false)
+  notes           String?
+  purchased_price Int?
+  created_at      DateTime   @default(now())
+}
+
+model InvestmentAction {
+  id           Int       @id @default(autoincrement())
+  target_type  String
+  target_id    Int
+  npc          NPC?      @relation("NPCInvestments", fields: [target_id], references: [id])
+  faction      Faction?  @relation("FactionInvestments", fields: [target_id], references: [id])
+  character_id Int
+  character    Character @relation(fields: [character_id], references: [id])
+  action_type  String
+  amount       Int
+  description  String
+  outcome      String
+  av_at_time   Int
+  skill_used   String?
+  game_day     Int
+  created_at   DateTime  @default(now())
+}
+
+model Ship {
+  id                 Int          @id @default(autoincrement())
+  name               String
+  ship_class         String
+  displacement_tons  Int
+  hull_points        Int
+  hull_damage        Int          @default(0)
+  hull_severity      Int          @default(0)
+  jump_rating        Int
+  thrust_rating      Int
+  current_thrust     Int?
+  fuel_capacity      Int
+  fuel_current       Int
+  cargo_capacity     Int
+  staterooms         Int          @default(0)
+  cryopods           Int          @default(0)
+  credits            Int          @default(0)
+  mortgage_per_month Int?
+  armour             Int          @default(0)
+  notes              String?
+  systems            ShipSystem[]
+  weapons            ShipWeapon[]
+  created_at         DateTime     @default(now())
+}
+
+model ShipSystem {
+  id                        Int              @id @default(autoincrement())
+  ship_id                   Int
+  ship                      Ship             @relation(fields: [ship_id], references: [id])
+  name                      String
+  system_type               String
+  damage_state              String           @default("operational")
+  damage_notes              String?
+  hull_severity             Int              @default(0)
+  maintenance_interval_days Int              @default(30)
+  last_maintained_day       Int?
+  maintenance_due_day       Int?
+  overdue_penalty           String?
+  maintenance_logs          MaintenanceLog[]
+  created_at                DateTime         @default(now())
+}
+
+model ShipWeapon {
+  id               Int      @id @default(autoincrement())
+  ship_id          Int
+  ship             Ship     @relation(fields: [ship_id], references: [id])
+  name             String
+  weapon_type      String
+  mount_type       String
+  tech_level       Int
+  damage           String
+  range            String
+  cost             Int
+  ammo_current     Int?
+  ammo_max         Int?
+  ammo_refill_cost Int?
+  damage_state     String   @default("operational")
+  hull_severity    Int      @default(0)
+  turret_group     Int?
+  notes            String?
+  created_at       DateTime @default(now())
+}
+
+model MaintenanceLog {
+  id               Int         @id @default(autoincrement())
+  ship_system_id   Int?
+  ship_system      ShipSystem? @relation(fields: [ship_system_id], references: [id])
+  character_id     Int
+  character        Character   @relation(fields: [character_id], references: [id])
+  action_type      String
+  description      String
+  cost             Int?
+  game_day         Int
+  actions_consumed Boolean     @default(true)
+  created_at       DateTime    @default(now())
+}
+
+model CrewMember {
+  id                    Int       @id @default(autoincrement())
+  name                  String
+  position              String
+  quality_tier          String
+  specialty_skill       String
+  specialty_dm          Int
+  other_skills_dm       Int
+  base_salary           Int
+  monthly_salary        Int
+  salary_arrears        Int       @default(0)
+  hired_day             Int
+  last_paid_day         Int?
+  last_retention_day    Int?
+  last_retention_week   Int?
+  is_leaving            Boolean   @default(false)
+  hired_by_character_id Int
+  hired_by              Character @relation(fields: [hired_by_character_id], references: [id])
+  status                String    @default("active")
+  notes                 String?
+  created_at            DateTime  @default(now())
+}
+
+model MissileSalvo {
+  id               Int      @id @default(autoincrement())
+  launched_day     Int
+  launched_round   Int
+  range_band       String
+  missile_count    Int
+  rounds_to_impact Int
+  rounds_elapsed   Int      @default(0)
+  status           String   @default("in_flight")
+  created_at       DateTime @default(now())
+}
+
+model EventLog {
+  id           Int        @id @default(autoincrement())
+  game_day     Int
+  event_type   String
+  character_id Int?
+  character    Character? @relation(fields: [character_id], references: [id])
+  world_id     Int?
+  world        World?     @relation(fields: [world_id], references: [id])
+  description  String
+  is_public    Boolean    @default(true)
+  created_at   DateTime   @default(now())
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  from_player_id Int
+  from_player    Player   @relation("SentMessages", fields: [from_player_id], references: [id])
+  to_player_id   Int?
+  to_player      Player?  @relation("ReceivedMessages", fields: [to_player_id], references: [id])
+  recipient_type String   @default("all")
+  body           String
+  is_read        Boolean  @default(false)
+  game_day       Int
+  created_at     DateTime @default(now())
+}

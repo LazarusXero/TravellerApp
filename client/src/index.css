@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0a0e1a;
+    --color-surface: #111827;
+    --color-border: #1f2937;
+    --color-text: #f9fafb;
+    --color-muted: #6b7280;
+    --color-accent: #4465f8;
+  }
+
+  * {
+    @apply border-gray-800;
+  }
+
+  body {
+    @apply bg-gray-950 text-gray-100 antialiased;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded-full;
+  }
+}
+
+@layer base {
+  @keyframes pin-shake {
+    0%, 100% { transform: translateX(0); }
+    15%       { transform: translateX(-8px); }
+    30%       { transform: translateX(8px); }
+    45%       { transform: translateX(-6px); }
+    60%       { transform: translateX(6px); }
+    75%       { transform: translateX(-3px); }
+    90%       { transform: translateX(3px); }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-pin-shake {
+    animation: pin-shake 0.55s ease-in-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out forwards;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-nexus-600 hover:bg-nexus-500 text-white rounded-lg
+           font-medium transition-colors duration-150 focus:outline-none
+           focus:ring-2 focus:ring-nexus-500 focus:ring-offset-2 focus:ring-offset-gray-900
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-100 rounded-lg
+           font-medium transition-colors duration-150 focus:outline-none
+           focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 bg-red-900 hover:bg-red-800 text-red-100 rounded-lg
+           font-medium transition-colors duration-150 focus:outline-none
+           focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply bg-gray-900 border border-gray-800 rounded-xl p-5;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg
+           text-gray-100 placeholder-gray-500
+           focus:outline-none focus:ring-2 focus:ring-nexus-500 focus:border-transparent
+           transition-colors duration-150;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-active {
+    @apply badge bg-emerald-900 text-emerald-300;
+  }
+
+  .badge-inactive {
+    @apply badge bg-gray-800 text-gray-400;
+  }
+
+  .badge-pending {
+    @apply badge bg-amber-900 text-amber-300;
+  }
+
+  .badge-completed {
+    @apply badge bg-blue-900 text-blue-300;
+  }
+}

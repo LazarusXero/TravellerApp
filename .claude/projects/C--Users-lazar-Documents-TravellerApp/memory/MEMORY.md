@@ -1,0 +1,1 @@
+- [Nexus Command Project Setup](project_nexus_command.md) — Full-stack app structure, stack, key paths, and dotenv quirk for the Nexus Command project

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s http://localhost:5173 -o /dev/null -w \"Vite HTTP status: %{http_code}\\\\n\")",
+      "Bash(DATABASE_URL=\"file:./prisma/dev.db\" npx prisma db push)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(DATABASE_URL=\"file:./prisma/dev.db\" npx prisma migrate dev --name init)",
+      "Bash(DATABASE_URL=\"file:./prisma/dev.db\" npx prisma migrate dev --name init --create-only)",
+      "Bash(DATABASE_URL=\"file:./prisma/dev.db\" script -q -c \"npx prisma migrate dev --name init\" /dev/null)",
+      "Bash(DATABASE_URL=\"file:./prisma/dev.db\" winpty npx prisma migrate dev --name init)",
+      "Bash(DATABASE_URL=\"file:./prisma/dev.db\" winpty \"/c/Program Files/nodejs/npx.cmd\" prisma migrate dev --name init)",
+      "Bash(timeout 7 npx tsx src/index.ts)",
+      "Bash(curl -s http://localhost:3000/api/players)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"player_id\":999,\"pin\":\"1234\"}')",
+      "Bash(netstat -ano)",
+      "Bash(kill -9 9672)",
+      "Bash(powershell.exe:*)",
+      "Bash(timeout 8 npx tsx src/index.ts)",
+      "Bash(curl -s -X POST http://localhost:3000/api/players -H \"Content-Type: application/json\" -d '{\"name\":\"GM\",\"pin\":\"1234\",\"role\":\"gm\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"player_id\":1,\"pin\":\"1234\"}')",
+      "Bash(npx tsx:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/players -H \"Content-Type: application/json\" -d '{\"name\":\"The GM\",\"pin\":\"1234\",\"role\":\"gm\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"player_id\":1,\"pin\":\"9999\"}')"
+    ]
+  }
+}
