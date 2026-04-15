@@ -77,19 +77,21 @@ model Item {
   name                  String
   type                  String
   sub_type              String
-  tech_level            String
-  law_level             String?
-  cost                  Int
-  cost_unit             String           @default("Cr")
-  mass                  Float?
-  mass_unit             String           @default("kg")
-  black_market_category String?
+  tech_level            Int
+  law_level             Int              @default(0)
+  black_market_category Int              @default(0)
+  cost_cr               Float
+  mass_kg               Float?
   damage                String?
   protection            String?
+  magazine_qty          Int?
+  slots                 Int?
+  radiation_protection  Int?
   traits                String?
   range                 String?
   required_skill        String?
   reference             String?
+  description           String?
   active_in_game        Boolean          @default(false)
   world_inventory       WorldInventory[]
   inventory_items       InventoryItem[]

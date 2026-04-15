@@ -33,45 +33,75 @@ type NavNode = LeafNode | SectionNode;
 // ── Nav definitions ───────────────────────────────────────────────────────────
 
 const GM_NAV: NavNode[] = [
-  { kind: 'link', to: '/gm',          label: 'Dashboard', icon: '▦', exact: true },
-  { kind: 'link', to: '/gm/game',     label: 'Game',      icon: '◈' },
+  { kind: 'link', to: '/gm', label: 'Dashboard', icon: '▦', exact: true },
   {
     kind: 'section', label: 'Codex', icon: '⊟', storageKey: 'gm_codex',
     children: [
       { to: '/gm/worlds', label: 'Worlds' },
-      { to: '/gm/items',  label: 'Items', placeholder: true },
+      { to: '/gm/items',  label: 'Items' },
     ],
   },
-  { kind: 'link', to: '/gm/npcs',     label: 'NPCs',      icon: '◎', placeholder: true },
-  { kind: 'link', to: '/gm/factions', label: 'Factions',  icon: '⬡', placeholder: true },
+  {
+    kind: 'section', label: 'Game', icon: '◈', storageKey: 'gm_game',
+    children: [
+      { to: '/gm/game',           label: 'Information' },
+      { to: '/gm/game/eventlog',  label: 'Event Log',  placeholder: true },
+      { to: '/gm/game/messaging', label: 'Messaging',  placeholder: true },
+      { to: '/gm/game/characters',label: 'Characters', placeholder: true },
+      { to: '/gm/game/events',    label: 'Events',     placeholder: true },
+    ],
+  },
+  {
+    kind: 'section', label: 'World', icon: '◉', storageKey: 'gm_world',
+    children: [
+      { to: '/gm/world/information',  label: 'Information',  placeholder: true },
+      { to: '/gm/world/store',        label: 'Store',        placeholder: true },
+      { to: '/gm/world/black-market', label: 'Black Market', placeholder: true },
+      { to: '/gm/world/trade-goods',  label: 'Trade Goods',  placeholder: true },
+      { to: '/gm/world/freight',      label: 'Freight',      placeholder: true },
+      { to: '/gm/world/passengers',   label: 'Passengers',   placeholder: true },
+    ],
+  },
   {
     kind: 'section', label: 'Ship', icon: '◁', storageKey: 'gm_ship',
     children: [
       { to: '/gm/ship/information', label: 'Information', placeholder: true },
+      { to: '/gm/ship/crew',        label: 'Crew',        placeholder: true },
+      { to: '/gm/ship/inventory',   label: 'Inventory',   placeholder: true },
       { to: '/gm/ship/systems',     label: 'Systems',     placeholder: true },
       { to: '/gm/ship/cargo',       label: 'Cargo',       placeholder: true },
+      { to: '/gm/ship/berths-passengers',label: 'Berths / Passengers', placeholder: true },
       { to: '/gm/ship/weapons',     label: 'Weapons',     placeholder: true },
       { to: '/gm/ship/combat',      label: 'Combat',      placeholder: true },
     ],
   },
-  { kind: 'link', to: '/gm/players', label: 'Players', icon: '◎' },
+  { kind: 'link', to: '/gm/npcs',     label: 'NPCs',     icon: '◎', placeholder: true },
+  { kind: 'link', to: '/gm/factions', label: 'Factions', icon: '⬡', placeholder: true },
+  { kind: 'link', to: '/gm/players',  label: 'Players',  icon: '◎' },
 ];
 
 const PLAYER_NAV: NavNode[] = [
-  { kind: 'link', to: '/player/game', label: 'Game', icon: '◈' },
-  {
-    kind: 'section', label: 'Codex', icon: '⊟', storageKey: 'player_codex',
-    children: [
-      { to: '/player/worlds', label: 'Worlds' },
-      { to: '/player/items',  label: 'Items', placeholder: true },
-    ],
-  },
   {
     kind: 'section', label: 'Player', icon: '★', storageKey: 'player_player',
     children: [
       { to: '/player/character', label: 'Character Sheet', placeholder: true },
       { to: '/player/skills',    label: 'Skills',          placeholder: true },
       { to: '/player/inventory', label: 'Inventory',       placeholder: true },
+    ],
+  },
+  {
+    kind: 'section', label: 'Codex', icon: '⊟', storageKey: 'player_codex',
+    children: [
+      { to: '/player/worlds', label: 'Worlds' },
+      { to: '/player/items',  label: 'Items' },
+    ],
+  },
+  {
+    kind: 'section', label: 'Game', icon: '◈', storageKey: 'player_game',
+    children: [
+      { to: '/player/game',           label: 'Information' },
+      { to: '/player/game/eventlog',  label: 'Event Log',  placeholder: true },
+      { to: '/player/game/messaging', label: 'Messaging',  placeholder: true },
     ],
   },
   {
@@ -88,11 +118,13 @@ const PLAYER_NAV: NavNode[] = [
   {
     kind: 'section', label: 'Ship', icon: '◁', storageKey: 'player_ship',
     children: [
-      { to: '/player/ship/information', label: 'Information', placeholder: true },
-      { to: '/player/ship/systems',     label: 'Systems',     placeholder: true },
-      { to: '/player/ship/cargo',       label: 'Cargo',       placeholder: true },
-      { to: '/player/ship/berths',      label: 'Berths',      placeholder: true },
-      { to: '/player/ship/combat',      label: 'Combat',      placeholder: true },
+      { to: '/player/ship/information',      label: 'Information',       placeholder: true },
+      { to: '/player/ship/crew',             label: 'Crew',              placeholder: true },
+      { to: '/player/ship/inventory',        label: 'Inventory',         placeholder: true },
+      { to: '/player/ship/systems',          label: 'Systems',           placeholder: true },
+      { to: '/player/ship/cargo',            label: 'Cargo',             placeholder: true },
+      { to: '/player/ship/berths-passengers',label: 'Berths / Passengers', placeholder: true },
+      { to: '/player/ship/combat',           label: 'Combat',            placeholder: true },
     ],
   },
   { kind: 'link', to: '/player/npcs',     label: 'NPCs',     icon: '◎', placeholder: true },
@@ -106,7 +138,7 @@ const LEAF_ACTIVE = 'bg-nexus-900/60 text-nexus-300 border border-nexus-800/60';
 const LEAF_IDLE = 'text-gray-400 hover:text-gray-100 hover:bg-gray-800';
 const LEAF_PLACEHOLDER = 'text-gray-700 cursor-not-allowed select-none';
 
-function NavLeaf({ node }: { node: LeafNode }) {
+function NavLeaf({ node, onClose }: { node: LeafNode; onClose: () => void }) {
   if (node.placeholder) {
     return (
       <div
@@ -122,6 +154,7 @@ function NavLeaf({ node }: { node: LeafNode }) {
     <NavLink
       to={node.to}
       end={node.exact}
+      onClick={onClose}
       className={({ isActive }) => `${LEAF_BASE} ${isActive ? LEAF_ACTIVE : LEAF_IDLE}`}
     >
       <span className="text-base leading-none">{node.icon}</span>
@@ -130,7 +163,7 @@ function NavLeaf({ node }: { node: LeafNode }) {
   );
 }
 
-function NavSection({ node }: { node: SectionNode }) {
+function NavSection({ node, onClose }: { node: SectionNode; onClose: () => void }) {
   const location = useLocation();
   const storageKey = `nexus_nav_${node.storageKey}`;
 
@@ -199,6 +232,7 @@ function NavSection({ node }: { node: SectionNode }) {
                 key={child.to}
                 to={child.to}
                 end
+                onClick={onClose}
                 className={({ isActive }) =>
                   [
                     'block px-2 py-1.5 text-xs rounded transition-colors duration-100',
@@ -220,7 +254,7 @@ function NavSection({ node }: { node: SectionNode }) {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose: () => void }) {
   const health = useHealth();
   const { player, logout, isGM } = useAuth();
   const navigate = useNavigate();
@@ -236,10 +270,23 @@ export function Sidebar() {
     <aside className="w-56 shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-gray-800 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-nexus-400 text-xl font-bold tracking-tight">⬡ NEXUS</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-nexus-400 text-xl font-bold tracking-tight">⬡ NEXUS</span>
+            </div>
+            <p className="text-gray-500 text-xs mt-0.5">Command Centre</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="md:hidden text-gray-500 hover:text-gray-200 transition-colors p-1"
+            aria-label="Close navigation"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <p className="text-gray-500 text-xs mt-0.5">Command Centre</p>
       </div>
 
       {/* Player badge */}
@@ -261,9 +308,9 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
         {navNodes.map((node) =>
           node.kind === 'link' ? (
-            <NavLeaf key={node.to} node={node} />
+            <NavLeaf key={node.to} node={node} onClose={onClose} />
           ) : (
-            <NavSection key={node.storageKey} node={node} />
+            <NavSection key={node.storageKey} node={node} onClose={onClose} />
           )
         )}
       </nav>
