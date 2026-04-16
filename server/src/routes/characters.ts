@@ -437,6 +437,62 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // ---------------------------------------------------------------------------
+// DELETE /api/characters/:id
+// ---------------------------------------------------------------------------
+
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) return next(createError('Invalid character ID', HTTP_STATUS.BAD_REQUEST));
+
+    const character = await prisma.character.findUnique({
+      where: { id },
+      select: { id: true, player_id: true, isActive: true },
+    });
+    if (!character) return next(createError('Character not found', HTTP_STATUS.NOT_FOUND));
+
+    await prisma.$transaction(async (tx) => {
+      // Clear any Player.active_character_id pointing here
+      await tx.player.updateMany({ where: { active_character_id: id }, data: { active_character_id: null } });
+
+      // Delete all child records that lack cascade
+      await tx.skillTraining.deleteMany({ where: { character_id: id } });
+      await tx.skillPointAward.deleteMany({ where: { character_id: id } });
+      await tx.worldNote.deleteMany({ where: { character_id: id } });
+      await tx.cargoHold.deleteMany({ where: { character_id: id } });
+      await tx.inventoryItem.deleteMany({ where: { owner_id: id } });
+      await tx.investmentAction.deleteMany({ where: { character_id: id } });
+      await tx.maintenanceLog.deleteMany({ where: { character_id: id } });
+      await tx.crewMember.deleteMany({ where: { hired_by_character_id: id } });
+
+      // Preserve event history but sever the FK
+      await tx.eventLog.updateMany({ where: { character_id: id }, data: { character_id: null } });
+
+      // CharacterSkill cascades, but delete explicitly inside the transaction
+      await tx.characterSkill.deleteMany({ where: { characterId: id } });
+
+      await tx.character.delete({ where: { id } });
+    });
+
+    // If the deleted character was active, promote the oldest remaining character
+    if (character.isActive) {
+      const next = await prisma.character.findFirst({
+        where: { player_id: character.player_id },
+        orderBy: { created_at: 'asc' },
+        select: { id: true },
+      });
+      if (next) {
+        await prisma.character.update({ where: { id: next.id }, data: { isActive: true } });
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // PUT /api/characters/:id/activate
 // ---------------------------------------------------------------------------
 
