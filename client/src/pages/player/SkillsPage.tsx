@@ -1,51 +1,59 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { apiFetch } from '../../hooks/useApi';
 import { CHARACTER_COLORS, SKILL_CATEGORIES } from '../../constants/characters';
+import { useActiveCharacter } from '../../components/ActiveCharacterBanner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface CharacterSkill {
+  skillName: string;
+  level: number | null;
+}
+
+interface SkillTraining {
+  skill_name: string;
+  training_days_applied: number;
+}
+
+interface CharacterDetail {
+  id: number;
+  colorScheme: string;
+  skill_points: number;
+  actions_spent_day: number | null;
+  character_skills: CharacterSkill[];
+  skill_training?: SkillTraining[];
+}
+
 interface SkillState {
-  level: number | null;           // CharacterSkill.level
-  training_days_applied: number;  // SkillTraining.training_days_applied
+  level: number | null;
+  training_days_applied: number;
 }
 
-interface CharState {
-  colorScheme: string;            // Character.colorScheme
-  skill_points: number;           // Character.skill_points
-  actions_spent_day: boolean;     // true if Character.actions_spent_day is non-null
+interface GameData {
+  day: number;
 }
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const INITIAL_SKILLS: Record<string, SkillState> = {
-  'Pilot (Spacecraft)':         { level: 2, training_days_applied: 14 },
-  'Pilot (Small Craft)':        { level: 0, training_days_applied: 3  },
-  'Astrogation':                { level: 1, training_days_applied: 8  },
-  'Vacc Suit':                  { level: 1, training_days_applied: 6  },
-  'Engineer (M-Drive)':         { level: 0, training_days_applied: 2  },
-  'Gun Combat (Energy)':        { level: 1, training_days_applied: 5  },
-  'Melee (Blade)':              { level: 0, training_days_applied: 3  },
-  'Electronics (Computers)':    { level: 1, training_days_applied: 3  },
-  'Electronics (Sensors)':      { level: 0, training_days_applied: 2  },
-  'Mechanic':                   { level: 2, training_days_applied: 11 },
-  'Medic':                      { level: 0, training_days_applied: 1  },
-  'Navigation':                 { level: 0, training_days_applied: 2  },
-  'Carouse':                    { level: 1, training_days_applied: 4  },
-  'Persuade':                   { level: 1, training_days_applied: 3  },
-  'Streetwise':                 { level: 0, training_days_applied: 1  },
-  'Stealth':                    { level: 0, training_days_applied: 2  },
-  'Recon':                      { level: 0, training_days_applied: 1  },
-};
-
-const INITIAL_CHAR: CharState = {
-  colorScheme:      'Jedi Blue',
-  skill_points:     3,
-  actions_spent_day: false,
-};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function hexFor(name: string): string {
   return CHARACTER_COLORS.find((c) => c.name === name)?.hex ?? '#4FC3F7';
+}
+
+function buildSkillMap(char: CharacterDetail): Record<string, SkillState> {
+  const map: Record<string, SkillState> = {};
+  for (const cs of char.character_skills) {
+    map[cs.skillName] = { level: cs.level, training_days_applied: 0 };
+  }
+  for (const st of (char.skill_training ?? [])) {
+    const existing = map[st.skill_name];
+    if (existing) {
+      map[st.skill_name] = { ...existing, training_days_applied: st.training_days_applied };
+    } else {
+      map[st.skill_name] = { level: null, training_days_applied: st.training_days_applied };
+    }
+  }
+  return map;
 }
 
 // ── Skill Tile ────────────────────────────────────────────────────────────────
@@ -100,16 +108,17 @@ function SkillTile({ skillName, data, hex, onClick }: SkillTileProps) {
 interface SkillModalProps {
   skillName: string;
   data: SkillState;
-  char: CharState;
+  skillPoints: number;
+  actionsSpentDay: boolean;
   hex: string;
   onSpendPoint: () => void;
   onTrainForDay: () => void;
   onClose: () => void;
 }
 
-function SkillModal({ skillName, data, char, hex, onSpendPoint, onTrainForDay, onClose }: SkillModalProps) {
-  const canSpend = char.skill_points > 0;
-  const canTrain = !char.actions_spent_day;
+function SkillModal({ skillName, data, skillPoints, actionsSpentDay, hex, onSpendPoint, onTrainForDay, onClose }: SkillModalProps) {
+  const canSpend = skillPoints > 0;
+  const canTrain = !actionsSpentDay;
   const levelLabel = data.level === null ? 'Untrained' : `Level ${data.level}`;
 
   return (
@@ -191,7 +200,7 @@ function SkillModal({ skillName, data, char, hex, onSpendPoint, onTrainForDay, o
                 color: '#374151',
               }}
             >
-              {char.skill_points} SP
+              {skillPoints} SP
             </span>
           </button>
 
@@ -232,100 +241,55 @@ function SkillModal({ skillName, data, char, hex, onSpendPoint, onTrainForDay, o
   );
 }
 
-// ── Demo Controls Panel ───────────────────────────────────────────────────────
-
-interface DemoPanelProps {
-  char: CharState;
-  hex: string;
-  onChange: (updates: Partial<CharState>) => void;
-}
-
-function DemoPanel({ char, hex, onChange }: DemoPanelProps) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
-      {open && (
-        <div
-          className="rounded-xl p-4 shadow-2xl w-60"
-          style={{ backgroundColor: '#0f1623', border: '1px solid #1f2937' }}
-        >
-          <div className="text-xs text-gray-600 uppercase tracking-widest mb-3 font-semibold">Demo Controls</div>
-          <div className="space-y-3">
-            {/* Color scheme picker */}
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Color Scheme</label>
-              <select
-                value={char.colorScheme}
-                onChange={(e) => onChange({ colorScheme: e.target.value })}
-                className="w-full bg-gray-900 border border-gray-800 rounded-lg text-gray-200 text-xs px-2 py-1.5 focus:outline-none"
-              >
-                {CHARACTER_COLORS.map((c) => (
-                  <option key={c.name} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Daily action toggle */}
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <div
-                onClick={() => onChange({ actions_spent_day: !char.actions_spent_day })}
-                className="w-9 h-5 rounded-full transition-colors duration-200 relative cursor-pointer shrink-0"
-                style={{ backgroundColor: char.actions_spent_day ? hex + '80' : '#374151' }}
-              >
-                <div
-                  className="absolute top-0.5 w-4 h-4 rounded-full bg-gray-200 transition-transform duration-200 shadow"
-                  style={{ transform: char.actions_spent_day ? 'translateX(1.25rem)' : 'translateX(0.125rem)' }}
-                />
-              </div>
-              <span className="text-xs text-gray-400">Daily action used</span>
-            </label>
-
-            {/* Skill points stepper */}
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Skill Points</label>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => onChange({ skill_points: Math.max(0, char.skill_points - 1) })}
-                  className="w-7 h-7 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300 text-base transition-colors flex items-center justify-center"
-                >−</button>
-                <span className="font-mono text-sm text-gray-200 min-w-[2rem] text-center">{char.skill_points}</span>
-                <button
-                  onClick={() => onChange({ skill_points: char.skill_points + 1 })}
-                  className="w-7 h-7 rounded-md border border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300 text-base transition-colors flex items-center justify-center"
-                >+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium shadow-lg transition-all duration-150 border"
-        style={{
-          backgroundColor: open ? hex + '20' : '#0f1623',
-          borderColor: open ? hex + '50' : '#1f2937',
-          color: open ? hex : '#6b7280',
-        }}
-      >
-        <span>⚙</span> Demo
-      </button>
-    </div>
-  );
-}
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function SkillsPage() {
-  const [char, setChar] = useState<CharState>(INITIAL_CHAR);
-  const [skills, setSkills] = useState<Record<string, SkillState>>(INITIAL_SKILLS);
+  const { player } = useAuth();
+  const { activeCharacter, loading: bannerLoading } = useActiveCharacter(player?.id ?? 0);
+
+  const [char, setChar] = useState<CharacterDetail | null>(null);
+  const [gameDay, setGameDay] = useState<number>(0);
+  const [skills, setSkills] = useState<Record<string, SkillState>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [view, setView] = useState<'trained' | 'all'>('trained');
   const [search, setSearch] = useState('');
   const [openCats, setOpenCats] = useState<Set<string>>(new Set(Object.keys(SKILL_CATEGORIES)));
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
-  const hex = hexFor(char.colorScheme);
+  const fetchData = useCallback(async (charId: number) => {
+    setLoading(true);
+    try {
+      const [charRes, gameRes] = await Promise.all([
+        apiFetch<CharacterDetail>(`/api/characters/${charId}`),
+        apiFetch<GameData>('/api/game'),
+      ]);
+
+      if (charRes.success && charRes.data) {
+        setChar(charRes.data);
+        setSkills(buildSkillMap(charRes.data));
+        setError(null);
+      } else {
+        setError(charRes.error ?? 'Failed to load character');
+      }
+
+      if (gameRes.success && gameRes.data) {
+        setGameDay(gameRes.data.day);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unexpected error loading skills');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeCharacter?.id) void fetchData(activeCharacter.id);
+  }, [activeCharacter?.id, fetchData]);
+
+  const hex = char ? hexFor(char.colorScheme) : '#4FC3F7';
+  const actionsSpentDay = char !== null && char.actions_spent_day !== null && char.actions_spent_day === gameDay;
 
   function toggleCat(cat: string) {
     setOpenCats((prev) => {
@@ -339,28 +303,62 @@ export function SkillsPage() {
     const q = search.toLowerCase();
     return catSkills.filter((name) => {
       const matchesSearch = q === '' || name.toLowerCase().includes(q);
-      const matchesView = view === 'all' || (skills[name]?.training_days_applied ?? 0) > 0;
+      const data = skills[name];
+      const matchesView = view === 'all' || (data?.level !== null && data?.level !== undefined) || (data?.training_days_applied ?? 0) > 0;
       return matchesSearch && matchesView;
     });
   }
 
-  function handleSpendPoint() {
-    if (!selectedSkill || char.skill_points <= 0) return;
-    setSkills((prev) => {
-      const curr = prev[selectedSkill] ?? { level: null, training_days_applied: 0 };
-      return { ...prev, [selectedSkill]: { ...curr, level: curr.level === null ? 0 : curr.level + 1 } };
+  async function handleSpendPoint() {
+    if (!selectedSkill || !char || char.skill_points <= 0) return;
+    const curr = skills[selectedSkill] ?? { level: null, training_days_applied: 0 };
+    const newLevel = curr.level === null ? 0 : curr.level + 1;
+    const newSP = char.skill_points - 1;
+
+    setSkills((prev) => ({ ...prev, [selectedSkill]: { ...curr, level: newLevel } }));
+    setChar((prev) => prev ? { ...prev, skill_points: newSP } : prev);
+
+    await apiFetch(`/api/characters/${char.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ skills: [{ skillName: selectedSkill, level: newLevel }], skill_points: newSP }),
     });
-    setChar((prev) => ({ ...prev, skill_points: prev.skill_points - 1 }));
   }
 
-  function handleTrainForDay() {
-    if (!selectedSkill || char.actions_spent_day) return;
-    setSkills((prev) => {
-      const curr = prev[selectedSkill] ?? { level: null, training_days_applied: 0 };
-      return { ...prev, [selectedSkill]: { ...curr, training_days_applied: curr.training_days_applied + 1 } };
-    });
-    setChar((prev) => ({ ...prev, actions_spent_day: true }));
+  async function handleTrainForDay() {
+    if (!selectedSkill || !char || actionsSpentDay) return;
+    const curr = skills[selectedSkill] ?? { level: null, training_days_applied: 0 };
+
+    setSkills((prev) => ({ ...prev, [selectedSkill]: { ...curr, training_days_applied: curr.training_days_applied + 1 } }));
+    setChar((prev) => prev ? { ...prev, actions_spent_day: gameDay } : prev);
     setSelectedSkill(null);
+
+    const res = await apiFetch(`/api/characters/${char.id}/train-skill`, {
+      method: 'POST',
+      body: JSON.stringify({ skill_name: selectedSkill }),
+    });
+
+    if (!res.success) {
+      setSkills((prev) => ({ ...prev, [selectedSkill]: curr }));
+      setChar((prev) => prev ? { ...prev, actions_spent_day: char.actions_spent_day } : prev);
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (bannerLoading || loading) {
+    return (
+      <div className="min-h-full flex items-center justify-center" style={{ backgroundColor: '#0a0e1a' }}>
+        <div className="text-gray-600 text-sm">Loading skills…</div>
+      </div>
+    );
+  }
+
+  if (error || !char) {
+    return (
+      <div className="min-h-full flex items-center justify-center" style={{ backgroundColor: '#0a0e1a' }}>
+        <div className="text-red-500 text-sm">{error ?? 'No character loaded'}</div>
+      </div>
+    );
   }
 
   const hasAnyVisible = Object.values(SKILL_CATEGORIES).some((s) => visibleSkills(s).length > 0);
@@ -398,7 +396,7 @@ export function SkillsPage() {
         </div>
 
         {/* Daily action status */}
-        {char.actions_spent_day && (
+        {actionsSpentDay && (
           <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
             <span>◉</span>
             <span>Daily training action already used</span>
@@ -524,20 +522,14 @@ export function SkillsPage() {
         <SkillModal
           skillName={selectedSkill}
           data={skills[selectedSkill] ?? { level: null, training_days_applied: 0 }}
-          char={char}
+          skillPoints={char.skill_points}
+          actionsSpentDay={actionsSpentDay}
           hex={hex}
-          onSpendPoint={handleSpendPoint}
-          onTrainForDay={handleTrainForDay}
+          onSpendPoint={() => void handleSpendPoint()}
+          onTrainForDay={() => void handleTrainForDay()}
           onClose={() => setSelectedSkill(null)}
         />
       )}
-
-      {/* ── Demo Controls ──────────────────────────────────────────────────── */}
-      <DemoPanel
-        char={char}
-        hex={hex}
-        onChange={(updates) => setChar((prev) => ({ ...prev, ...updates }))}
-      />
     </div>
   );
 }
