@@ -18,6 +18,7 @@ import { PlayerItemBrowser } from './pages/player/ItemBrowser';
 import { CharacterCreator } from './pages/player/CharacterCreator';
 import { CharacterSheet } from './pages/player/CharacterSheet';
 import { CharactersPage } from './pages/player/CharactersPage';
+import { SkillsPage } from './pages/player/SkillsPage';
 import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
 
@@ -207,6 +208,16 @@ export default function App() {
                 <ProtectedRoute requiredRole="player">
                   <AppLayout showBanner>
                     <PlayerItemBrowser />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/skills"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <SkillsPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
