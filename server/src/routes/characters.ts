@@ -297,7 +297,10 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
     const character = await prisma.character.findUnique({
       where: { id },
-      include: CHARACTER_WITH_SKILLS,
+      include: {
+        character_skills: { orderBy: { skillName: 'asc' as const } },
+        skill_training: { where: { is_active: true }, orderBy: { skill_name: 'asc' as const } },
+      },
     });
 
     if (!character) return next(createError('Character not found', HTTP_STATUS.NOT_FOUND));
@@ -526,6 +529,60 @@ router.put('/:id/activate', async (req: Request, res: Response, next: NextFuncti
     });
 
     res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/characters/:id/train-skill
+// ---------------------------------------------------------------------------
+
+router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) return next(createError('Invalid character ID', HTTP_STATUS.BAD_REQUEST));
+
+    const { skill_name } = req.body as { skill_name?: string };
+    if (!skill_name || typeof skill_name !== 'string') {
+      return next(createError('skill_name is required', HTTP_STATUS.BAD_REQUEST));
+    }
+
+    const gameDay = await getCurrentGameDay();
+
+    const character = await prisma.character.findUnique({
+      where: { id },
+      select: { id: true, actions_spent_day: true },
+    });
+    if (!character) return next(createError('Character not found', HTTP_STATUS.NOT_FOUND));
+    if (character.actions_spent_day !== null && character.actions_spent_day === gameDay) {
+      return next(createError('Daily training action already used', HTTP_STATUS.CONFLICT));
+    }
+
+    const existing = await prisma.skillTraining.findFirst({
+      where: { character_id: id, skill_name, is_active: true },
+    });
+
+    let training_days_applied: number;
+    if (existing) {
+      const updated = await prisma.skillTraining.update({
+        where: { id: existing.id },
+        data: { training_days_applied: { increment: 1 } },
+      });
+      training_days_applied = updated.training_days_applied;
+    } else {
+      const created = await prisma.skillTraining.create({
+        data: { character_id: id, skill_name, training_days_applied: 1, is_active: true, started_day: gameDay },
+      });
+      training_days_applied = created.training_days_applied;
+    }
+
+    await prisma.character.update({
+      where: { id },
+      data: { actions_spent_day: gameDay, action_type_today: 'train_skill' },
+    });
+
+    res.json({ success: true, data: { training_days_applied } });
   } catch (error) {
     next(error);
   }
