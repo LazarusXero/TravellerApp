@@ -15,10 +15,21 @@ import { PlayerGame } from './pages/PlayerGame';
 import { PlayerWorlds } from './pages/PlayerWorlds';
 import { GMItemBrowser } from './pages/gm/ItemBrowser';
 import { PlayerItemBrowser } from './pages/player/ItemBrowser';
+import { CharacterCreator } from './pages/player/CharacterCreator';
+import { CharacterSheet } from './pages/player/CharacterSheet';
+import { CharactersPage } from './pages/player/CharactersPage';
+import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
 
-function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayout({
+  children,
+  showBanner = false,
+}: {
+  children: React.ReactNode;
+  showBanner?: boolean;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { player } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -55,6 +66,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           </button>
           <span className="text-nexus-400 font-bold tracking-tight">⬡ NEXUS</span>
         </div>
+
+        {/* Active character banner — player pages only */}
+        {showBanner && player && (
+          <ActiveCharacterBanner playerId={player.id} />
+        )}
 
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
@@ -138,8 +154,28 @@ export default function App() {
               path="/player"
               element={
                 <ProtectedRoute requiredRole="player">
-                  <AppLayout>
+                  <AppLayout showBanner>
                     <PlayerDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/characters"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <CharactersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/character"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <CharacterSheet />
                   </AppLayout>
                 </ProtectedRoute>
               }
@@ -148,7 +184,7 @@ export default function App() {
               path="/player/game"
               element={
                 <ProtectedRoute requiredRole="player">
-                  <AppLayout>
+                  <AppLayout showBanner>
                     <PlayerGame />
                   </AppLayout>
                 </ProtectedRoute>
@@ -158,7 +194,7 @@ export default function App() {
               path="/player/worlds"
               element={
                 <ProtectedRoute requiredRole="player">
-                  <AppLayout>
+                  <AppLayout showBanner>
                     <PlayerWorlds />
                   </AppLayout>
                 </ProtectedRoute>
@@ -169,8 +205,18 @@ export default function App() {
               path="/player/items"
               element={
                 <ProtectedRoute requiredRole="player">
-                  <AppLayout>
+                  <AppLayout showBanner>
                     <PlayerItemBrowser />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/create-character"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout>
+                    <CharacterCreator />
                   </AppLayout>
                 </ProtectedRoute>
               }

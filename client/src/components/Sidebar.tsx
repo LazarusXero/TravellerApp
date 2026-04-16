@@ -84,9 +84,10 @@ const PLAYER_NAV: NavNode[] = [
   {
     kind: 'section', label: 'Player', icon: '★', storageKey: 'player_player',
     children: [
-      { to: '/player/character', label: 'Character Sheet', placeholder: true },
-      { to: '/player/skills',    label: 'Skills',          placeholder: true },
-      { to: '/player/inventory', label: 'Inventory',       placeholder: true },
+      { to: '/player/characters', label: 'Characters' },
+      { to: '/player/character',  label: 'Character Sheet' },
+      { to: '/player/skills',     label: 'Skills',    placeholder: true },
+      { to: '/player/inventory',  label: 'Inventory', placeholder: true },
     ],
   },
   {

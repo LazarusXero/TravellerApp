@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 
@@ -41,16 +42,28 @@ function statDM(value: number): string {
 
 export function PlayerDashboard() {
   const { player } = useAuth();
+  const navigate = useNavigate();
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!player) return;
-    apiFetch<PlayerDetail>(`/api/players/${player.id}`).then((res) => {
-      if (res.success && res.data) setDetail(res.data);
-      setLoading(false);
-    });
-  }, [player]);
+
+    // Redirect away from /player if the player already has characters
+    apiFetch<{ id: number; isActive: boolean }[]>(`/api/characters/player/${player.id}`).then(
+      (res) => {
+        if (res.success && res.data && res.data.length > 0) {
+          navigate('/player/characters', { replace: true });
+          return;
+        }
+        // No characters — stay on this page and load player detail
+        apiFetch<PlayerDetail>(`/api/players/${player.id}`).then((inner) => {
+          if (inner.success && inner.data) setDetail(inner.data);
+          setLoading(false);
+        });
+      },
+    );
+  }, [player, navigate]);
 
   const char = detail?.active_character ?? null;
 
@@ -62,20 +75,33 @@ export function PlayerDashboard() {
 
   return (
     <div className="p-8 space-y-8">
-      <div>
-        <p className="text-nexus-500 text-xs uppercase tracking-widest mb-1">Operator Console</p>
-        <h1 className="text-2xl font-bold text-gray-100">
-          {player?.name}
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Personal Dashboard</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-nexus-500 text-xs uppercase tracking-widest mb-1">Operator Console</p>
+          <h1 className="text-2xl font-bold text-gray-100">
+            {player?.name}
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Personal Dashboard</p>
+        </div>
+        <button
+          onClick={() => navigate('/player/create-character')}
+          className="btn-primary shrink-0"
+        >
+          + Create Character
+        </button>
       </div>
 
       {loading ? (
         <p className="text-gray-700">Loading…</p>
       ) : !char ? (
-        <div className="card text-center py-12 space-y-3">
-          <p className="text-gray-400 text-lg">No active character assigned.</p>
-          <p className="text-gray-600 text-sm">Contact your GM to have a character created and assigned.</p>
+        <div className="card text-center py-12 space-y-4">
+          <p className="text-gray-400 text-lg">No character yet.</p>
+          <button
+            onClick={() => navigate('/player/create-character')}
+            className="text-nexus-400 hover:text-nexus-300 text-sm transition-colors"
+          >
+            Create your first character →
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

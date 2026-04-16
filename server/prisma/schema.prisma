@@ -25,15 +25,25 @@ model Character {
   player_id           Int
   player              Player             @relation("OwnedCharacters", fields: [player_id], references: [id])
   name                String
+  species             String?
+  age                 Int?
+  gender              String?
+  homeworld           String?
+  background          String?
+  notes               String?
   portrait_url        String?
   description         String?
-  str                 Int                @default(7)
-  dex                 Int                @default(7)
-  end                 Int                @default(7)
-  int                 Int                @default(7)
-  edu                 Int                @default(7)
-  soc                 Int                @default(7)
+  colorScheme         String             @default("")
+  isActive            Boolean            @default(false)
+  status              String             @default("ACTIVE")
+  str                 Int?
+  dex                 Int?
+  end                 Int?
+  int                 Int?
+  edu                 Int?
+  soc                 Int?
   skills              String             @default("{}")
+  character_skills    CharacterSkill[]
   credits             Int                @default(0)
   actions_spent_day   Int?
   action_type_today   String?
@@ -53,6 +63,17 @@ model Character {
   skill_point_awards  SkillPointAward[]
   crew_hired          CrewMember[]
   created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+}
+
+model CharacterSkill {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  skillName   String
+  level       Int?
+
+  @@unique([characterId, skillName])
 }
 
 model Game {

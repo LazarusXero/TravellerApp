@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 // Load .env from root (server runs with CWD = /server, root .env is one level up)
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 import express from 'express';
@@ -23,6 +24,11 @@ async function bootstrap() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(requestLogger);
+
+  // Static uploads (portrait images, etc.)
+  const uploadsDir = path.resolve('uploads');
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  app.use('/uploads', express.static(uploadsDir));
 
   // API routes
   app.use(API_PREFIX, apiRouter);
