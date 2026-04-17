@@ -42,7 +42,7 @@ const ACTION_GROUPS: { title: string; actions: Action[] }[] = [
     actions: [
       { label: 'Skill Training',          cost: 2, kind: 'navigate', to: '/player/skills' },
       { label: 'Carouse',                 cost: 2, kind: 'log' },
-      { label: 'Medical Assistance',      cost: 1, kind: 'log' },
+      { label: 'Provide Medical Assistance',      cost: 1, kind: 'log' },
       { label: 'Asset Interaction',       cost: 1, kind: 'log' },
       { label: 'Other (GM Stipulated)',   cost: 1, kind: 'log' },
       { label: 'Other (GM Stipulated)',   cost: 2, kind: 'log' },
