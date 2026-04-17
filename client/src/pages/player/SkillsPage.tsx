@@ -5,6 +5,7 @@ import { apiFetch } from '../../hooks/useApi';
 import { CHARACTER_COLORS, SKILL_CATEGORIES } from '../../constants/characters';
 import { useActiveCharacter } from '../../components/ActiveCharacterBanner';
 import { getSkillUpgradeCost } from '../../utils/characterUtils';
+import { SkillDescModal, findSkillInfo } from '../../components/SkillDescModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,43 +66,64 @@ interface SkillTileProps {
   data: SkillState;
   hex: string;
   onClick: () => void;
+  onInfoClick: () => void;
 }
 
-function SkillTile({ skillName, data, hex, onClick }: SkillTileProps) {
+function SkillTile({ skillName, data, hex, onClick, onInfoClick }: SkillTileProps) {
   const [hovered, setHovered] = useState(false);
   const hasLevel = data.level !== null;
   const levelText = data.level === null ? '—' : String(data.level);
 
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="text-left rounded-lg p-3 w-full transition-all duration-150 active:scale-[0.97]"
+    <div
+      className="relative rounded-lg w-full"
       style={{
         backgroundColor: hovered ? '#1f2937' : '#111827',
         border: `1px solid ${hovered ? hex + '60' : '#1f2937'}`,
+        transition: 'background-color 150ms, border-color 150ms',
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <div className="text-gray-200 text-sm font-medium leading-tight truncate mb-2">
-        {skillName}
-      </div>
-      <div className="flex items-center justify-between gap-1">
-        <span
-          className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0"
-          style={{
-            color: hasLevel ? hex : '#6b7280',
-            backgroundColor: hasLevel ? hex + '22' : '#1f2937',
-            border: `1px solid ${hasLevel ? hex + '44' : '#374151'}`,
-          }}
-        >
-          Lv {levelText}
-        </span>
-        <span className="text-xs flex items-center gap-1 shrink-0" style={{ color: data.training_days_applied > 0 ? hex + 'aa' : '#4b5563' }}>
-          ◷ {data.training_days_applied}d
-        </span>
-      </div>
-    </button>
+      {/* Main action area */}
+      <button
+        onClick={onClick}
+        className="text-left p-3 w-full transition-all duration-150 active:scale-[0.97] pr-7"
+      >
+        <div className="text-gray-200 text-sm font-medium leading-tight truncate mb-2">
+          {skillName}
+        </div>
+        <div className="flex items-center justify-between gap-1">
+          <span
+            className="text-xs font-bold font-mono px-1.5 py-0.5 rounded shrink-0"
+            style={{
+              color: hasLevel ? hex : '#6b7280',
+              backgroundColor: hasLevel ? hex + '22' : '#1f2937',
+              border: `1px solid ${hasLevel ? hex + '44' : '#374151'}`,
+            }}
+          >
+            Lv {levelText}
+          </span>
+          <span className="text-xs flex items-center gap-1 shrink-0" style={{ color: data.training_days_applied > 0 ? hex + 'aa' : '#4b5563' }}>
+            ◷ {data.training_days_applied}d
+          </span>
+        </div>
+      </button>
+
+      {/* Info icon */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onInfoClick(); }}
+        aria-label={`Info for ${skillName}`}
+        className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded transition-colors"
+        style={{ color: '#6b7280' }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = '#d1d5db')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7280')}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
@@ -261,6 +283,19 @@ export function SkillsPage() {
   const [search, setSearch] = useState('');
   const [openCats, setOpenCats] = useState<Set<string>>(new Set(Object.keys(SKILL_CATEGORIES)));
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+
+  const [descSkill, setDescSkill] = useState<string | null>(null);
+  const [descModalOpen, setDescModalOpen] = useState(false);
+
+  function openDescModal(skillName: string) {
+    setDescSkill(skillName);
+    setDescModalOpen(true);
+  }
+
+  function closeDescModal() {
+    setDescModalOpen(false);
+    setDescSkill(null);
+  }
 
   const fetchData = useCallback(async (charId: number) => {
     setLoading(true);
@@ -531,6 +566,7 @@ export function SkillsPage() {
                       data={skills[skillName] ?? { level: null, training_days_applied: 0 }}
                       hex={hex}
                       onClick={() => setSelectedSkill(skillName)}
+                      onInfoClick={() => openDescModal(skillName)}
                     />
                   ))}
                 </div>
@@ -552,6 +588,15 @@ export function SkillsPage() {
           onSpendPoint={() => void handleSpendPoint()}
           onTrainForDay={() => void handleTrainForDay()}
           onClose={() => setSelectedSkill(null)}
+        />
+      )}
+
+      {/* ── Skill Description Modal ─────────────────────────────────────────── */}
+      {descModalOpen && descSkill && (
+        <SkillDescModal
+          skillName={descSkill}
+          info={findSkillInfo(descSkill)}
+          onClose={closeDescModal}
         />
       )}
     </div>

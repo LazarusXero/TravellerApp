@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../hooks/useApi';
 import { getStatDM, getSkillDM } from '../../utils/characterUtils';
 import { CHARACTER_COLORS, SKILL_LIST, SKILL_CATEGORIES } from '../../constants/characters';
+import { SkillDescModal, findSkillInfo } from '../../components/SkillDescModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,9 @@ export function GMCharacterSheet() {
   const [skillView, setSkillView] = useState<'trained' | 'all'>('trained');
   const [skillSearch, setSkillSearch] = useState('');
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
+
+  // Skill description modal
+  const [descSkill, setDescSkill] = useState<string | null>(null);
 
   // Portrait
   const [uploadingPortrait, setUploadingPortrait] = useState(false);
@@ -277,7 +281,12 @@ export function GMCharacterSheet() {
     const saving = savingSkills.has(skillName);
     return (
       <div className="flex items-center justify-between py-1.5 border-b border-gray-800/60 last:border-0 gap-3">
-        <span className="text-gray-300 text-sm flex-1 min-w-0 truncate">{skillName}</span>
+        <button
+          onClick={() => setDescSkill(skillName)}
+          className="text-gray-300 hover:text-gray-100 text-sm flex-1 min-w-0 truncate text-left transition-colors underline-offset-2 hover:underline"
+        >
+          {skillName}
+        </button>
         <div className="flex items-center gap-2 shrink-0">
           {saving && <span className="text-gray-600 text-xs">…</span>}
           <select
@@ -815,6 +824,15 @@ export function GMCharacterSheet() {
 
       {/* ── SKILLS ───────────────────────────────────────────────────────────── */}
       {renderSkills()}
+
+      {/* ── SKILL DESCRIPTION MODAL ──────────────────────────────────────────── */}
+      {descSkill && (
+        <SkillDescModal
+          skillName={descSkill}
+          info={findSkillInfo(descSkill)}
+          onClose={() => setDescSkill(null)}
+        />
+      )}
     </div>
   );
 }

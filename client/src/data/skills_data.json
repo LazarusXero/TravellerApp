@@ -1,0 +1,294 @@
+[
+  {
+    "name": "Admin",
+    "description": "This skill covers bureaucracies and administration of all sorts, including the navigation of bureaucratic obstacles or disasters. It also covers tracking inventories, ship manifests and other records.",
+    "specialities": []
+  },
+  {
+    "name": "Advocate",
+    "description": "Advocate gives a knowledge of common legal codes and practises, especially interstellar law. It also gives the Traveller experience in oratory, debate and public speaking, making it an excellent skill for lawyers and politicians.",
+    "specialities": []
+  },
+  {
+    "name": "Animals",
+    "description": "This skill, rare on industrialised or technologically advanced worlds, is for the care of animals.",
+    "specialities": [
+      { "name": "Handling", "description": "The Traveller knows how to handle an animal and ride those trained to bear a rider. Unusual animals raise the difficulty of the check." },
+      { "name": "Veterinary", "description": "The Traveller is trained in veterinary medicine and animal care." },
+      { "name": "Training", "description": "The Traveller knows how to tame and train animals." }
+    ]
+  },
+  {
+    "name": "Art",
+    "description": "The Traveller is trained in a type of creative art.",
+    "specialities": [
+      { "name": "Performer", "description": "The Traveller is a trained actor, dancer or singer at home on the stage, screen or holo." },
+      { "name": "Holography", "description": "Recording and producing aesthetically pleasing and clear holographic images." },
+      { "name": "Instrument", "description": "Playing a particular musical instrument, such a flute, piano or organ." },
+      { "name": "Visual Media", "description": "Making artistic or abstract paintings or sculptures in a variety of media." },
+      { "name": "Write", "description": "Composing inspiring or interesting pieces of text." }
+    ]
+  },
+  {
+    "name": "Astrogation",
+    "description": "This skill is for plotting the courses of starships and calculating accurate jumps. See Spacecraft Operations chapter.",
+    "specialities": []
+  },
+  {
+    "name": "Athletics",
+    "description": "The Traveller is a trained athlete and is physically fit. The Athletics skill effectively augments a Traveller's physical characteristics. Athletics is also the principal skill used in adverse gravitational environments.",
+    "specialities": [
+      { "name": "Dexterity", "description": "Climbing, juggling, throwing. For alien races with wings, this also includes flying." },
+      { "name": "Endurance", "description": "Long-distance running, hiking, long-distance swimming." },
+      { "name": "Strength", "description": "Feats of strength, weight-lifting, arm wrestling." }
+    ]
+  },
+  {
+    "name": "Broker",
+    "description": "The Broker skill allows a Traveller to negotiate trades and arrange fair deals. It is heavily used when trading (see the Trade chapter).",
+    "specialities": []
+  },
+  {
+    "name": "Carouse",
+    "description": "Carousing is the art of socialising; having fun, but also ensuring other people have fun, and infectious good humour. It also covers social awareness and subterfuge in such situations.",
+    "specialities": []
+  },
+  {
+    "name": "Deception",
+    "description": "Deception allows a Traveller to lie fluently, disguise himself, perform sleight of hand and fool onlookers. Most underhanded ways of cheating and lying fall under deception.",
+    "specialities": []
+  },
+  {
+    "name": "Diplomat",
+    "description": "The Diplomat skill is for negotiating deals, establishing peaceful contact and smoothing over social faux pas. It includes how to behave in high society and proper ways to address nobles. It is a much more formal skill than Persuade.",
+    "specialities": []
+  },
+  {
+    "name": "Drive",
+    "description": "This skill is for controlling ground vehicles of various types.",
+    "specialities": [
+      { "name": "Hovercraft", "description": "Vehicles that rely on a cushion of air and thrusters for motion." },
+      { "name": "Mole", "description": "For controlling vehicles that move through solid matter using drills or other earth-moving technologies, such as plasma torches or cavitation." },
+      { "name": "Track", "description": "For tanks and other vehicles that move on tracks." },
+      { "name": "Walker", "description": "Vehicles that use two or more legs to manoeuvre." },
+      { "name": "Wheel", "description": "For automobiles and similar groundcars." }
+    ]
+  },
+  {
+    "name": "Electronics",
+    "description": "This skill is used to operate electronic devices such as computers and ship-board systems. Higher levels represent the ability to repair and create electronic devices and systems.",
+    "specialities": [
+      { "name": "Comms", "description": "The use of modern telecommunications; opening communications channels, querying computer networks, jamming signals, and the proper protocols for communicating with starports and other spacecraft." },
+      { "name": "Computers", "description": "Using and controlling computer systems, and similar electronics and electrics." },
+      { "name": "Remote Ops", "description": "Using telepresence to remotely control drones, missiles, robots and other devices." },
+      { "name": "Sensors", "description": "The use and interpretation of data from electronic sensor devices, from observation satellites and remote probes to thermal imaging and densitometers." }
+    ]
+  },
+  {
+    "name": "Engineer",
+    "description": "The Engineer skill is used to operate and maintain spacecraft and advanced vehicles. Engineer can be used to make repairs on damaged systems on spacecraft and advanced vehicles. For repairs on simpler machines and systems, use the Mechanic skill.",
+    "specialities": [
+      { "name": "M-drive", "description": "Maintaining and operating a spacecraft's manoeuvre drive, as well as its artificial gravity." },
+      { "name": "J-drive", "description": "Maintaining and operating a spacecraft's Jump drive." },
+      { "name": "Life Support", "description": "Covers oxygen generators, heating and lighting and other necessary life support systems." },
+      { "name": "Power", "description": "Maintaining and operating a spacecraft's power plant." }
+    ]
+  },
+  {
+    "name": "Explosives",
+    "description": "The Explosives skill covers the use of demolition charges and other explosive devices, including assembling or disarming bombs. A failed Explosives check with an Effect of -4 or less can result in a bomb detonating prematurely.",
+    "specialities": []
+  },
+  {
+    "name": "Flyer",
+    "description": "The various specialities of this skill cover different types of flying vehicles. Flyers only work in an atmosphere; vehicles that can leave the atmosphere and enter orbit generally use the Pilot skill.",
+    "specialities": [
+      { "name": "Airship", "description": "Used for airships, dirigibles and other powered lighter than air craft." },
+      { "name": "Grav", "description": "This covers air/rafts, grav belts and other vehicles that use gravitic technology." },
+      { "name": "Ornithopter", "description": "For vehicles that fly through the use of flapping wings." },
+      { "name": "Rotor", "description": "For helicopters, tilt-rotors and aerodynes." },
+      { "name": "Wing", "description": "For jets, vectored thrust aircraft and aeroplanes using a lifting body." }
+    ]
+  },
+  {
+    "name": "Gambler",
+    "description": "The Traveller is familiar with a wide variety of gambling games, such as poker, roulette, blackjack, horse-racing, sports betting and so on, and has an excellent grasp of statistics and probability. Gambler increases the rewards from Benefit Rolls, giving the Traveller DM+1 to his cash rolls if he has Gambler 1 or better.",
+    "specialities": []
+  },
+  {
+    "name": "Gun Combat",
+    "description": "The Gun Combat skill covers a variety of ranged weapons. See Combat chapter for details on using guns in combat.",
+    "specialities": [
+      { "name": "Archaic", "description": "For primitive weapons that are not thrown, such as bows and blowpipes." },
+      { "name": "Energy", "description": "Using advanced energy weapons like laser pistols or plasma rifles." },
+      { "name": "Slug", "description": "Weapons that fire a solid projectile such as the autorifle or gauss rifle." }
+    ]
+  },
+  {
+    "name": "Gunner",
+    "description": "The various specialities of this skill deal with the operation of ship-mounted weapons in space combat. See Spacecraft Operations chapter for more details. Most Travellers have smaller ships equipped solely with turret weapons.",
+    "specialities": [
+      { "name": "Turret", "description": "Operating turret-mounted weapons on board a ship." },
+      { "name": "Ortillery", "description": "A contraction of Orbital Artillery — using a ship's weapons for planetary bombardment or attacks on stationary targets." },
+      { "name": "Screen", "description": "Activating and using a ship's energy screens like Black Globe generators or meson screens." },
+      { "name": "Capital", "description": "Operating bay or spinal mount weapons on board a ship." }
+    ]
+  },
+  {
+    "name": "Heavy Weapons",
+    "description": "The Heavy Weapons skill covers man-portable and larger weapons that cause extreme property damage, such as rocket launchers, artillery and large plasma weapons.",
+    "specialities": [
+      { "name": "Artillery", "description": "Fixed guns, mortars and other indirect-fire weapons." },
+      { "name": "Man Portable", "description": "Missile launchers, flamethrowers and man portable fusion and plasma." },
+      { "name": "Vehicle", "description": "Large weapons typically mounted on vehicles or strongpoints such as tank guns and autocannon." }
+    ]
+  },
+  {
+    "name": "Investigate",
+    "description": "The Investigate skill incorporates keen observation, forensics, and detailed analysis.",
+    "specialities": []
+  },
+  {
+    "name": "Jack-of-All-Trades",
+    "description": "The Jack-of-All-Trades skill works differently to other skills. It reduces the unskilled penalty a Traveller receives for not having the appropriate skill by one for every level of Jack-of-All-Trades. There is no benefit for having Jack-of-All-Trades 0 or Jack-of-All-Trades 4 or more.",
+    "specialities": []
+  },
+  {
+    "name": "Language",
+    "description": "There are numerous different Language specialities, each one covering reading and writing a different language. All Travellers can speak and read their native language without needing the Language skill. Having Language 0 implies the Traveller has a smattering of simple phrases in several languages.",
+    "specialities": [
+      { "name": "Anglic", "description": "The common trade language of the Third Imperium, derived originally from the English spoken in the Rule of Man." },
+      { "name": "Vilani", "description": "The language spoken by the Vilani of the First Imperium; the 'Latin' of the Third Imperium." },
+      { "name": "Zdetl", "description": "The Zhodani spoken language." },
+      { "name": "Oynprith", "description": "The Droyne ritual language." }
+    ]
+  },
+  {
+    "name": "Leadership",
+    "description": "The Leadership skill is for directing, inspiring and rallying allies and comrades. A Traveller may make a Leadership action in combat, as detailed in the Combat chapter.",
+    "specialities": []
+  },
+  {
+    "name": "Mechanic",
+    "description": "The Mechanic skill allows a Traveller to maintain and repair most equipment. Unlike the narrower Engineer or Science skills, Mechanic does not allow a Traveller to build new devices or alter existing ones — it is purely for repairs and maintenance but covers all types of equipment.",
+    "specialities": []
+  },
+  {
+    "name": "Medic",
+    "description": "The Medic skill covers emergency first aid and battlefield triage as well as diagnosis, treatment, surgery and long-term care.",
+    "specialities": []
+  },
+  {
+    "name": "Melee",
+    "description": "The Melee skill covers attacking in hand-to-hand combat and the use of suitable weapons.",
+    "specialities": [
+      { "name": "Unarmed", "description": "Punching, kicking and wrestling; using improvised weapons in a bar brawl." },
+      { "name": "Blade", "description": "Attacking with swords, rapiers, blades and other edged weapons." },
+      { "name": "Bludgeon", "description": "Attacking with maces, clubs, staves and so on." },
+      { "name": "Natural", "description": "Weapons that are part of an alien or creature, such as claws or teeth." }
+    ]
+  },
+  {
+    "name": "Navigation",
+    "description": "Navigation is the planetside counterpart of astrogation, covering plotting courses and finding directions on the ground.",
+    "specialities": []
+  },
+  {
+    "name": "Persuade",
+    "description": "Persuade is a more casual, informal version of Diplomat. It covers fast talking, bargaining, wheedling and bluffing. It also covers bribery or intimidation.",
+    "specialities": []
+  },
+  {
+    "name": "Pilot",
+    "description": "The Pilot skill specialities cover different forms of spacecraft. See Spacecraft Operations chapter for more details.",
+    "specialities": [
+      { "name": "Small Craft", "description": "Shuttles and other craft under 100 tons." },
+      { "name": "Spacecraft", "description": "Trade ships and other vessels between 100 and 5,000 tons." },
+      { "name": "Capital Ships", "description": "Battleships and other ships over 5,000 tons." }
+    ]
+  },
+  {
+    "name": "Profession",
+    "description": "A Traveller with a Profession skill is trained in producing useful goods or services. The Traveller can make a Profession check to earn money on a planet that supports that trade, earning Cr250 x the Effect per month. Levels in Profession do not grant the ability to use other specialities at level 0; each speciality must be learned individually.",
+    "specialities": [
+      { "name": "Belter", "description": "Mining asteroids for valuable ores and minerals." },
+      { "name": "Biologicals", "description": "Engineering and managing artificial organisms." },
+      { "name": "Civil Engineering", "description": "Designing structures and buildings." },
+      { "name": "Construction", "description": "Building orbital habitats and megastructures." },
+      { "name": "Hydroponics", "description": "Growing crops in hostile environments." },
+      { "name": "Polymers", "description": "Designing and using polymers." }
+    ]
+  },
+  {
+    "name": "Recon",
+    "description": "A Traveller trained in Recon is able to scout out dangers and spot threats, unusual objects or out of place people.",
+    "specialities": []
+  },
+  {
+    "name": "Science",
+    "description": "The Science skill covers not just knowledge but also practical application of that knowledge where such practical application is possible. There are a large range of specialities.",
+    "specialities": [
+      { "name": "Archaeology", "description": "The study of ancient civilisations, including the previous Imperiums and Ancients. It also covers techniques of investigation and excavations." },
+      { "name": "Astronomy", "description": "The study of stars and celestial phenomena." },
+      { "name": "Biology", "description": "The study of living organisms." },
+      { "name": "Chemistry", "description": "The study of matter at the atomic, molecular, and macromolecular levels." },
+      { "name": "Cosmology", "description": "The study of universe and its creation." },
+      { "name": "Cybernetics", "description": "The study of blending living and synthetic life." },
+      { "name": "Economics", "description": "The study of trade and markets." },
+      { "name": "Genetics", "description": "The study of genetic codes and engineering." },
+      { "name": "History", "description": "The study of the past, as seen through documents and records as opposed to physical artefacts." },
+      { "name": "Linguistics", "description": "The study of languages." },
+      { "name": "Philosophy", "description": "The study of beliefs and religions." },
+      { "name": "Physics", "description": "The study of the fundamental forces." },
+      { "name": "Planetology", "description": "The study of planet formation and evolution." },
+      { "name": "Psionicology", "description": "The study of psionic powers and phenomena." },
+      { "name": "Psychology", "description": "The study of thought and society." },
+      { "name": "Robotics", "description": "The study of robot construction and use." },
+      { "name": "Sophontology", "description": "The study of intelligent living creatures." },
+      { "name": "Xenology", "description": "The study of alien life forms." }
+    ]
+  },
+  {
+    "name": "Seafarer",
+    "description": "The Seafarer skill covers all manner of watercraft and ocean travel.",
+    "specialities": [
+      { "name": "Ocean Ships", "description": "For motorised sea-going vessels." },
+      { "name": "Personal", "description": "Used for very small waterborne craft such as canoes and rowboats." },
+      { "name": "Sail", "description": "This skill is for wind-driven watercraft." },
+      { "name": "Submarine", "description": "For vehicles that travel underwater." }
+    ]
+  },
+  {
+    "name": "Stealth",
+    "description": "A Traveller trained in the Stealth skill is adept at staying unseen, unheard, and unnoticed.",
+    "specialities": []
+  },
+  {
+    "name": "Steward",
+    "description": "The Steward skill allows the Traveller to serve and care for nobles and high-class passengers. It covers everything from proper address and behaviour to cooking and tailoring, as well as basic management skills. A Traveller with the Steward skill is necessary on any ship offering High Passage.",
+    "specialities": []
+  },
+  {
+    "name": "Streetwise",
+    "description": "A Traveller with the Streetwise skill understands the urban environment and the power structures in society. On his homeworld and in related systems, he knows criminal contacts and fixers. On other worlds, he can quickly intuit power structures and can fit into local underworlds.",
+    "specialities": []
+  },
+  {
+    "name": "Survival",
+    "description": "The Survival skill is the wilderness counterpart of the urban Streetwise skill — the Traveller is trained to survive in the wild, build shelters, hunt or trap animals, avoid exposure and so forth. He can recognise plants and animals of his homeworld and related planets, and can pick up on common clues and traits even on unfamiliar worlds.",
+    "specialities": []
+  },
+  {
+    "name": "Tactics",
+    "description": "This skill covers tactical planning and decision making, from board games to squad level combat to fleet engagements. For use in combat, see Combat chapter.",
+    "specialities": [
+      { "name": "Military", "description": "Co-ordinating the attacks of foot troops or vehicles on the ground." },
+      { "name": "Naval", "description": "Co-ordinating the attacks of a spacecraft or fleet." }
+    ]
+  },
+  {
+    "name": "Vacc Suit",
+    "description": "The Vacc Suit skill allows a Traveller to wear and operate spacesuits and environmental suits. A Traveller will rarely need to make Vacc Suit checks under ordinary circumstances — merely possessing the skill is enough. If the Traveller does not have the requisite Vacc Suit skill for the suit he is wearing, he suffers DM-2 to all skill checks made while wearing a suit for each missing level. This skill also permits the character to operate advanced battle armour.",
+    "specialities": []
+  }
+]
