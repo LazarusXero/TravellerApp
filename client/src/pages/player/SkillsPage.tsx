@@ -23,6 +23,7 @@ interface CharacterDetail {
   id: number;
   colorScheme: string;
   skill_points: number;
+  activity_points: number;
   actions_spent_day: number | null;
   character_skills: CharacterSkill[];
   skill_training?: SkillTraining[];
@@ -135,15 +136,16 @@ interface SkillModalProps {
   skillPoints: number;
   upgradeCost: number;
   actionsSpentDay: boolean;
+  activityPoints: number;
   hex: string;
   onSpendPoint: () => void;
   onTrainForDay: () => void;
   onClose: () => void;
 }
 
-function SkillModal({ skillName, data, skillPoints, upgradeCost, actionsSpentDay, hex, onSpendPoint, onTrainForDay, onClose }: SkillModalProps) {
+function SkillModal({ skillName, data, skillPoints, upgradeCost, actionsSpentDay, activityPoints, hex, onSpendPoint, onTrainForDay, onClose }: SkillModalProps) {
   const canSpend = skillPoints >= upgradeCost;
-  const canTrain = !actionsSpentDay;
+  const canTrain = !actionsSpentDay && activityPoints >= 2;
   const levelLabel = data.level === null ? 'Untrained' : `Level ${data.level}`;
 
   return (
@@ -248,8 +250,17 @@ function SkillModal({ skillName, data, skillPoints, upgradeCost, actionsSpentDay
               <span>◷</span>
               <span>Train for the Day</span>
             </span>
-            {!canTrain && (
-              <span className="text-xs text-gray-700">Already used</span>
+            {!canTrain ? (
+              <span className="text-xs text-gray-700">
+                {actionsSpentDay ? 'Already used' : 'No AP'}
+              </span>
+            ) : (
+              <span
+                className="text-xs font-mono font-bold px-2 py-0.5 rounded-md"
+                style={{ backgroundColor: '#1f2937', color: '#facc15' }}
+              >
+                ⚡ 2pts
+              </span>
             )}
           </button>
         </div>
@@ -372,7 +383,7 @@ export function SkillsPage() {
 
     // Optimistic update
     setSkills((prev) => ({ ...prev, [skill]: { ...curr, training_days_applied: curr.training_days_applied + 1 } }));
-    setChar((prev) => prev ? { ...prev, actions_spent_day: gameDay } : prev);
+    setChar((prev) => prev ? { ...prev, actions_spent_day: gameDay, activity_points: (prev.activity_points ?? 0) - 2 } : prev);
     setSelectedSkill(null);
 
     const res = await apiFetch<{
@@ -387,7 +398,7 @@ export function SkillsPage() {
     if (!res.success) {
       // Roll back optimistic update
       setSkills((prev) => ({ ...prev, [skill]: curr }));
-      setChar((prev) => prev ? { ...prev, actions_spent_day: char.actions_spent_day } : prev);
+      setChar((prev) => prev ? { ...prev, actions_spent_day: char.actions_spent_day, activity_points: char.activity_points } : prev);
       return;
     }
 
@@ -584,6 +595,7 @@ export function SkillsPage() {
           skillPoints={char.skill_points}
           upgradeCost={getSkillUpgradeCost((skills[selectedSkill] ?? { level: null }).level)}
           actionsSpentDay={actionsSpentDay}
+          activityPoints={char.activity_points}
           hex={hex}
           onSpendPoint={() => void handleSpendPoint()}
           onTrainForDay={() => void handleTrainForDay()}
