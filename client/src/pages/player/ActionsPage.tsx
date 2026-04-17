@@ -84,6 +84,13 @@ export function ActionsPage() {
 
   async function handleAction(action: Action) {
     if (!activeCharacter) return;
+
+    // Skill Training deducts AP on the Skills page when the player trains; skip deduction here.
+    if (action.label === 'Skill Training') {
+      if (action.kind === 'navigate' && action.to) navigate(action.to);
+      return;
+    }
+
     const key = `${action.label}-${action.cost}`;
     setActing(key);
 

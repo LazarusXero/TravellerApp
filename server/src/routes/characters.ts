@@ -555,11 +555,14 @@ router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFu
 
     const character = await prisma.character.findUnique({
       where: { id },
-      select: { id: true, name: true, actions_spent_day: true, skill_points: true },
+      select: { id: true, name: true, actions_spent_day: true, skill_points: true, activity_points: true },
     });
     if (!character) return next(createError('Character not found', HTTP_STATUS.NOT_FOUND));
     if (character.actions_spent_day !== null && character.actions_spent_day === gameDay) {
       return next(createError('Daily training action already used', HTTP_STATUS.CONFLICT));
+    }
+    if (character.activity_points < 2) {
+      return next(createError('Insufficient activity points', HTTP_STATUS.CONFLICT));
     }
 
     const existing = await prisma.skillTraining.findFirst({
@@ -585,10 +588,10 @@ router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFu
         training_days_applied = created.training_days_applied;
       }
 
-      // Mark daily action spent
+      // Mark daily action spent and deduct activity points
       await tx.character.update({
         where: { id },
-        data: { actions_spent_day: gameDay, action_type_today: 'train_skill' },
+        data: { actions_spent_day: gameDay, action_type_today: 'train_skill', activity_points: { decrement: 2 } },
       });
 
       // Award SP when threshold is reached
