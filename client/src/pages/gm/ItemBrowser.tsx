@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,12 @@ interface Item {
 interface ItemMeta {
   types: string[];
   subTypes: { type: string; sub_type: string }[];
+}
+
+interface CharacterOption {
+  id: number;
+  name: string;
+  playerName: string;
 }
 
 interface Filters {
@@ -120,8 +127,18 @@ function ItemEditModal({
   onClose: () => void;
   onSaved: (updated: Item) => void;
 }) {
+  const { isGM } = useAuth();
   const [form, setForm] = useState<Record<string, string>>(itemToForm(item));
   const [saving, setSaving] = useState(false);
+  const [view, setView] = useState<'edit' | 'send'>('edit');
+
+  // Send-to-character state
+  const [characters, setCharacters] = useState<CharacterOption[]>([]);
+  const [charsLoading, setCharsLoading] = useState(false);
+  const [selectedCharId, setSelectedCharId] = useState<number | ''>('');
+  const [quantity, setQuantity] = useState(1);
+  const [sending, setSending] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const set = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
@@ -142,123 +159,251 @@ function ItemEditModal({
     }
   };
 
+  const openSendView = async () => {
+    setView('send');
+    setSelectedCharId('');
+    setQuantity(1);
+    setSuccessMsg(null);
+    if (characters.length === 0) {
+      setCharsLoading(true);
+      try {
+        const res = await fetch('/api/gm/characters');
+        const json: { success: boolean; data: { id: number; name: string; characters: { id: number; name: string }[] }[] } = await res.json();
+        const players = json.data;
+        const opts: CharacterOption[] = [];
+        for (const player of players) {
+          for (const char of player.characters) {
+            opts.push({ id: char.id, name: char.name, playerName: player.name });
+          }
+        }
+        setCharacters(opts);
+      } finally {
+        setCharsLoading(false);
+      }
+    }
+  };
+
+  const cancelSend = () => {
+    setView('edit');
+    setSuccessMsg(null);
+  };
+
+  const confirmSend = async () => {
+    if (selectedCharId === '') return;
+    setSending(true);
+    try {
+      await fetch('/api/inventory/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: item.id, characterId: selectedCharId, quantity }),
+      });
+      const charName = characters.find((c) => c.id === selectedCharId)?.name ?? 'character';
+      setSuccessMsg(`Item sent to ${charName}`);
+      setTimeout(() => {
+        setView('edit');
+        setSuccessMsg(null);
+      }, 1500);
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800 flex items-start justify-between shrink-0">
-          <div>
-            <p className="text-nexus-500 text-xs uppercase tracking-widest">Edit Item</p>
-            <h2 className="text-lg font-bold text-gray-100 mt-0.5">{item.name}</h2>
-            <p className="text-gray-600 text-xs mt-0.5">{item.type} / {item.sub_type}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-300 text-xl leading-none mt-1">✕</button>
-        </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto px-6 py-4 flex-1">
-          <div className="grid grid-cols-2 gap-4">
-
-            <div className="col-span-2">
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Name</label>
-              <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
+        {view === 'edit' ? (
+          <>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-800 flex items-start justify-between shrink-0">
+              <div>
+                <p className="text-nexus-500 text-xs uppercase tracking-widest">Edit Item</p>
+                <h2 className="text-lg font-bold text-gray-100 mt-0.5">{item.name}</h2>
+                <p className="text-gray-600 text-xs mt-0.5">{item.type} / {item.sub_type}</p>
+              </div>
+              <button onClick={onClose} className="text-gray-600 hover:text-gray-300 text-xl leading-none mt-1">✕</button>
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Sub-Type</label>
-              <input className="input" value={form.sub_type} onChange={(e) => set('sub_type', e.target.value)} />
+            {/* Body */}
+            <div className="overflow-y-auto px-6 py-4 flex-1">
+              <div className="grid grid-cols-2 gap-4">
+
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Name</label>
+                  <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Sub-Type</label>
+                  <input className="input" value={form.sub_type} onChange={(e) => set('sub_type', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Tech Level</label>
+                  <input type="number" min={0} max={19} className="input" value={form.tech_level} onChange={(e) => set('tech_level', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Law Level</label>
+                  <input type="number" min={0} max={10} className="input" value={form.law_level} onChange={(e) => set('law_level', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">BM Category</label>
+                  <input type="number" min={0} className="input" value={form.black_market_category} onChange={(e) => set('black_market_category', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Cost (Cr)</label>
+                  <input type="number" min={0} step="0.01" className="input" value={form.cost_cr} onChange={(e) => set('cost_cr', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Mass (kg)</label>
+                  <input type="number" min={0} step="0.01" className="input" placeholder="null" value={form.mass_kg} onChange={(e) => set('mass_kg', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Damage</label>
+                  <input className="input" placeholder="—" value={form.damage} onChange={(e) => set('damage', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Protection</label>
+                  <input className="input" placeholder="—" value={form.protection} onChange={(e) => set('protection', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Magazine Qty</label>
+                  <input type="number" min={0} className="input" placeholder="—" value={form.magazine_qty} onChange={(e) => set('magazine_qty', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Slots</label>
+                  <input type="number" min={0} className="input" placeholder="—" value={form.slots} onChange={(e) => set('slots', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Radiation Protection</label>
+                  <input type="number" min={0} className="input" placeholder="—" value={form.radiation_protection} onChange={(e) => set('radiation_protection', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Range</label>
+                  <input className="input" placeholder="—" value={form.range} onChange={(e) => set('range', e.target.value)} />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Traits</label>
+                  <input className="input" placeholder="—" value={form.traits} onChange={(e) => set('traits', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Required Skill</label>
+                  <input className="input" placeholder="—" value={form.required_skill} onChange={(e) => set('required_skill', e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Reference</label>
+                  <input className="input" placeholder="—" value={form.reference} onChange={(e) => set('reference', e.target.value)} />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                  <textarea
+                    rows={3}
+                    className="input resize-none"
+                    placeholder="—"
+                    value={form.description}
+                    onChange={(e) => set('description', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Tech Level</label>
-              <input type="number" min={0} max={19} className="input" value={form.tech_level} onChange={(e) => set('tech_level', e.target.value)} />
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-800 flex justify-end gap-3 shrink-0">
+              {isGM && (
+                <button onClick={openSendView} className="btn-secondary mr-auto">
+                  Send to Character
+                </button>
+              )}
+              <button onClick={onClose} className="btn-secondary">Cancel</button>
+              <button onClick={save} disabled={saving} className="btn-primary">
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Send view header */}
+            <div className="px-6 py-4 border-b border-gray-800 flex items-start justify-between shrink-0">
+              <div>
+                <p className="text-nexus-500 text-xs uppercase tracking-widest">Send to Character</p>
+                <h2 className="text-lg font-bold text-gray-100 mt-0.5">{item.name}</h2>
+                <p className="text-gray-600 text-xs mt-0.5">{item.type} / {item.sub_type}</p>
+              </div>
+              <button onClick={onClose} className="text-gray-600 hover:text-gray-300 text-xl leading-none mt-1">✕</button>
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Law Level</label>
-              <input type="number" min={0} max={10} className="input" value={form.law_level} onChange={(e) => set('law_level', e.target.value)} />
+            {/* Send view body */}
+            <div className="px-6 py-6 flex-1 space-y-5">
+              {successMsg ? (
+                <p className="text-emerald-400 text-sm font-medium">{successMsg}</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Character</label>
+                    {charsLoading ? (
+                      <p className="text-gray-600 text-sm">Loading…</p>
+                    ) : characters.length === 0 ? (
+                      <p className="text-gray-600 text-sm">No characters found.</p>
+                    ) : (
+                      <select
+                        className="input w-full"
+                        value={selectedCharId}
+                        onChange={(e) => setSelectedCharId(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      >
+                        <option value="">Select a character…</option>
+                        {characters.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} — {c.playerName}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      className="input w-24"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.min(99, Math.max(1, parseInt(e.target.value) || 1)))}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">BM Category</label>
-              <input type="number" min={0} className="input" value={form.black_market_category} onChange={(e) => set('black_market_category', e.target.value)} />
+            {/* Send view footer */}
+            <div className="px-6 py-4 border-t border-gray-800 flex justify-end gap-3 shrink-0">
+              <button onClick={cancelSend} className="btn-secondary">Cancel</button>
+              {!successMsg && (
+                <button
+                  onClick={confirmSend}
+                  disabled={sending || selectedCharId === '' || characters.length === 0}
+                  className="btn-primary"
+                >
+                  {sending ? 'Sending…' : 'Confirm'}
+                </button>
+              )}
             </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Cost (Cr)</label>
-              <input type="number" min={0} step="0.01" className="input" value={form.cost_cr} onChange={(e) => set('cost_cr', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Mass (kg)</label>
-              <input type="number" min={0} step="0.01" className="input" placeholder="null" value={form.mass_kg} onChange={(e) => set('mass_kg', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Damage</label>
-              <input className="input" placeholder="—" value={form.damage} onChange={(e) => set('damage', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Protection</label>
-              <input className="input" placeholder="—" value={form.protection} onChange={(e) => set('protection', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Magazine Qty</label>
-              <input type="number" min={0} className="input" placeholder="—" value={form.magazine_qty} onChange={(e) => set('magazine_qty', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Slots</label>
-              <input type="number" min={0} className="input" placeholder="—" value={form.slots} onChange={(e) => set('slots', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Radiation Protection</label>
-              <input type="number" min={0} className="input" placeholder="—" value={form.radiation_protection} onChange={(e) => set('radiation_protection', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Range</label>
-              <input className="input" placeholder="—" value={form.range} onChange={(e) => set('range', e.target.value)} />
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Traits</label>
-              <input className="input" placeholder="—" value={form.traits} onChange={(e) => set('traits', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Required Skill</label>
-              <input className="input" placeholder="—" value={form.required_skill} onChange={(e) => set('required_skill', e.target.value)} />
-            </div>
-
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Reference</label>
-              <input className="input" placeholder="—" value={form.reference} onChange={(e) => set('reference', e.target.value)} />
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1">Description</label>
-              <textarea
-                rows={3}
-                className="input resize-none"
-                placeholder="—"
-                value={form.description}
-                onChange={(e) => set('description', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-800 flex justify-end gap-3 shrink-0">
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
-          <button onClick={save} disabled={saving} className="btn-primary">
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

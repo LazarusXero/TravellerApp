@@ -16,12 +16,15 @@ import { PlayerWorlds } from './pages/PlayerWorlds';
 import { GMItemBrowser } from './pages/gm/ItemBrowser';
 import { GMCharactersPage } from './pages/gm/GMCharactersPage';
 import { GMCharacterSheet } from './pages/gm/GMCharacterSheet';
+import { GMInventoryPage } from './pages/gm/GMInventoryPage';
+import { GMCharacterInventory } from './pages/gm/GMCharacterInventory';
 import { PlayerItemBrowser } from './pages/player/ItemBrowser';
 import { CharacterCreator } from './pages/player/CharacterCreator';
 import { CharacterSheet } from './pages/player/CharacterSheet';
 import { CharactersPage } from './pages/player/CharactersPage';
 import { SkillsPage } from './pages/player/SkillsPage';
 import { ActionsPage } from './pages/player/ActionsPage';
+import { InventoryPage } from './pages/player/InventoryPage';
 import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
 
@@ -172,6 +175,26 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/gm/inventory"
+              element={
+                <ProtectedRoute requiredRole="gm">
+                  <AppLayout>
+                    <GMInventoryPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/gm/inventory/:characterId"
+              element={
+                <ProtectedRoute requiredRole="gm">
+                  <AppLayout>
+                    <GMCharacterInventory />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Player routes */}
             <Route
@@ -251,6 +274,16 @@ export default function App() {
                 <ProtectedRoute requiredRole="player">
                   <AppLayout showBanner>
                     <ActionsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/inventory"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <InventoryPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
