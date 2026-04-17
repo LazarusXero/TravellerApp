@@ -77,7 +77,13 @@ const GM_NAV: NavNode[] = [
   },
   { kind: 'link', to: '/gm/npcs',     label: 'NPCs',     icon: '◎', placeholder: true },
   { kind: 'link', to: '/gm/factions', label: 'Factions', icon: '⬡', placeholder: true },
-  { kind: 'link', to: '/gm/players',  label: 'Players',  icon: '◎' },
+  {
+    kind: 'section', label: 'Players', icon: '◎', storageKey: 'gm_players',
+    children: [
+      { to: '/gm/players',    label: 'Players' },
+      { to: '/gm/characters', label: 'Characters' },
+    ],
+  },
 ];
 
 const PLAYER_NAV: NavNode[] = [

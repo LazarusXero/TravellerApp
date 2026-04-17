@@ -14,6 +14,8 @@ import { PlayerDashboard } from './pages/PlayerDashboard';
 import { PlayerGame } from './pages/PlayerGame';
 import { PlayerWorlds } from './pages/PlayerWorlds';
 import { GMItemBrowser } from './pages/gm/ItemBrowser';
+import { GMCharactersPage } from './pages/gm/GMCharactersPage';
+import { GMCharacterSheet } from './pages/gm/GMCharacterSheet';
 import { PlayerItemBrowser } from './pages/player/ItemBrowser';
 import { CharacterCreator } from './pages/player/CharacterCreator';
 import { CharacterSheet } from './pages/player/CharacterSheet';
@@ -145,6 +147,26 @@ export default function App() {
                 <ProtectedRoute requiredRole="gm">
                   <AppLayout>
                     <GMItemBrowser />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/gm/characters"
+              element={
+                <ProtectedRoute requiredRole="gm">
+                  <AppLayout>
+                    <GMCharactersPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/gm/characters/:characterId"
+              element={
+                <ProtectedRoute requiredRole="gm">
+                  <AppLayout>
+                    <GMCharacterSheet />
                   </AppLayout>
                 </ProtectedRoute>
               }

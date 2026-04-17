@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useApp } from '../../context/AppContext';
 import { apiFetch } from '../../hooks/useApi';
 import { CHARACTER_COLORS, SKILL_CATEGORIES } from '../../constants/characters';
 import { useActiveCharacter } from '../../components/ActiveCharacterBanner';
+import { getSkillUpgradeCost } from '../../utils/characterUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -109,6 +111,7 @@ interface SkillModalProps {
   skillName: string;
   data: SkillState;
   skillPoints: number;
+  upgradeCost: number;
   actionsSpentDay: boolean;
   hex: string;
   onSpendPoint: () => void;
@@ -116,8 +119,8 @@ interface SkillModalProps {
   onClose: () => void;
 }
 
-function SkillModal({ skillName, data, skillPoints, actionsSpentDay, hex, onSpendPoint, onTrainForDay, onClose }: SkillModalProps) {
-  const canSpend = skillPoints > 0;
+function SkillModal({ skillName, data, skillPoints, upgradeCost, actionsSpentDay, hex, onSpendPoint, onTrainForDay, onClose }: SkillModalProps) {
+  const canSpend = skillPoints >= upgradeCost;
   const canTrain = !actionsSpentDay;
   const levelLabel = data.level === null ? 'Untrained' : `Level ${data.level}`;
 
@@ -200,7 +203,7 @@ function SkillModal({ skillName, data, skillPoints, actionsSpentDay, hex, onSpen
                 color: '#374151',
               }}
             >
-              {skillPoints} SP
+              {upgradeCost} SP
             </span>
           </button>
 
@@ -245,6 +248,7 @@ function SkillModal({ skillName, data, skillPoints, actionsSpentDay, hex, onSpen
 
 export function SkillsPage() {
   const { player } = useAuth();
+  const { notify } = useApp();
   const { activeCharacter, loading: bannerLoading } = useActiveCharacter(player?.id ?? 0);
 
   const [char, setChar] = useState<CharacterDetail | null>(null);
@@ -310,10 +314,12 @@ export function SkillsPage() {
   }
 
   async function handleSpendPoint() {
-    if (!selectedSkill || !char || char.skill_points <= 0) return;
+    if (!selectedSkill || !char) return;
     const curr = skills[selectedSkill] ?? { level: null, training_days_applied: 0 };
+    const cost = getSkillUpgradeCost(curr.level);
+    if (char.skill_points < cost) return;
     const newLevel = curr.level === null ? 0 : curr.level + 1;
-    const newSP = char.skill_points - 1;
+    const newSP = char.skill_points - cost;
 
     setSkills((prev) => ({ ...prev, [selectedSkill]: { ...curr, level: newLevel } }));
     setChar((prev) => prev ? { ...prev, skill_points: newSP } : prev);
@@ -327,19 +333,36 @@ export function SkillsPage() {
   async function handleTrainForDay() {
     if (!selectedSkill || !char || actionsSpentDay) return;
     const curr = skills[selectedSkill] ?? { level: null, training_days_applied: 0 };
+    const skill = selectedSkill;
 
-    setSkills((prev) => ({ ...prev, [selectedSkill]: { ...curr, training_days_applied: curr.training_days_applied + 1 } }));
+    // Optimistic update
+    setSkills((prev) => ({ ...prev, [skill]: { ...curr, training_days_applied: curr.training_days_applied + 1 } }));
     setChar((prev) => prev ? { ...prev, actions_spent_day: gameDay } : prev);
     setSelectedSkill(null);
 
-    const res = await apiFetch(`/api/characters/${char.id}/train-skill`, {
+    const res = await apiFetch<{
+      training_days_applied: number;
+      skill_point_awarded: boolean;
+      new_skill_points?: number;
+    }>(`/api/characters/${char.id}/train-skill`, {
       method: 'POST',
-      body: JSON.stringify({ skill_name: selectedSkill }),
+      body: JSON.stringify({ skill_name: skill }),
     });
 
     if (!res.success) {
-      setSkills((prev) => ({ ...prev, [selectedSkill]: curr }));
+      // Roll back optimistic update
+      setSkills((prev) => ({ ...prev, [skill]: curr }));
       setChar((prev) => prev ? { ...prev, actions_spent_day: char.actions_spent_day } : prev);
+      return;
+    }
+
+    if (res.data?.skill_point_awarded) {
+      // Reset training days to 0 and apply the awarded SP
+      setSkills((prev) => ({ ...prev, [skill]: { ...curr, training_days_applied: 0 } }));
+      if (res.data.new_skill_points !== undefined) {
+        setChar((prev) => prev ? { ...prev, skill_points: res.data!.new_skill_points! } : prev);
+      }
+      notify('success', `30 days of ${skill} training complete — +1 Skill Point awarded!`);
     }
   }
 
@@ -523,6 +546,7 @@ export function SkillsPage() {
           skillName={selectedSkill}
           data={skills[selectedSkill] ?? { level: null, training_days_applied: 0 }}
           skillPoints={char.skill_points}
+          upgradeCost={getSkillUpgradeCost((skills[selectedSkill] ?? { level: null }).level)}
           actionsSpentDay={actionsSpentDay}
           hex={hex}
           onSpendPoint={() => void handleSpendPoint()}
