@@ -82,6 +82,7 @@ const GM_NAV: NavNode[] = [
     children: [
       { to: '/gm/players',    label: 'Players' },
       { to: '/gm/characters', label: 'Characters' },
+      { to: '/gm/inventory',  label: 'Inventories' },
     ],
   },
 ];
@@ -94,7 +95,7 @@ const PLAYER_NAV: NavNode[] = [
       { to: '/player/character',  label: 'Character Sheet' },
       { to: '/player/skills',     label: 'Skills' },
       { to: '/player/actions',    label: 'Actions' },
-      { to: '/player/inventory',  label: 'Inventory', placeholder: true },
+      { to: '/player/inventory',  label: 'Inventory' },
     ],
   },
   {

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Item {
+export interface Item {
   id: number;
   name: string;
   type: string;
@@ -65,7 +65,7 @@ const formatMass = (kg: number | null): string => {
 
 // ── Read-Only Modal ───────────────────────────────────────────────────────────
 
-function ItemViewModal({ item, onClose }: { item: Item; onClose: () => void }) {
+export function ItemViewModal({ item, onClose }: { item: Item; onClose: () => void }) {
   const field = (label: string, value: string | number | null | undefined) => (
     <div>
       <p className="text-xs text-gray-600 uppercase tracking-wider mb-0.5">{label}</p>
