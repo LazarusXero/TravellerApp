@@ -36,6 +36,7 @@ interface CharacterDetail {
   soc: number;
   credits: number;
   skill_points: number;
+  activity_points: number;
   character_skills: CharacterSkill[];
 }
 
@@ -94,6 +95,9 @@ export function GMCharacterSheet() {
   // Stat inline editing
   const [editingStat, setEditingStat] = useState<StatKey | null>(null);
   const [statDraft, setStatDraft] = useState('');
+
+  // Activity Points (display only)
+  const [apPoints, setApPoints] = useState<number | null>(null);
 
   // Credits / skill points inline editing
   const [editingCredits, setEditingCredits] = useState(false);
@@ -162,7 +166,12 @@ export function GMCharacterSheet() {
 
   useEffect(() => {
     const id = parseInt(characterId ?? '', 10);
-    if (!isNaN(id)) void fetchDetail(id);
+    if (!isNaN(id)) {
+      void fetchDetail(id);
+      apiFetch<{ activity_points: number }>(`/api/characters/${id}/activity-points`)
+        .then((res) => { if (res.success && res.data) setApPoints(res.data.activity_points); })
+        .catch(() => {});
+    }
   }, [characterId, fetchDetail]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -580,7 +589,16 @@ export function GMCharacterSheet() {
             <span>{char.colorScheme}</span>
           </div>
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3 pt-1 flex-wrap">
+            {/* Activity Points */}
+            {apPoints !== null && (
+              <div className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm">
+                <span className="text-gray-500 text-xs block">Activity Points</span>
+                <span className={`font-bold ${apPoints === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+                  ⚡ {apPoints} / 2
+                </span>
+              </div>
+            )}
             {/* Credits */}
             <div
               className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm cursor-pointer hover:border-emerald-700 transition-colors"

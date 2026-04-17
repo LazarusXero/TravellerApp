@@ -5,6 +5,7 @@ import multer from 'multer';
 import { prisma } from '../engine/index.js';
 import { createError } from '../middleware/index.js';
 import { HTTP_STATUS } from '../constants/index.js';
+import { deductActivityPoints } from '../utils/activityPoints.js';
 
 const router = Router();
 
@@ -637,6 +638,59 @@ router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFu
       success: true,
       data: { training_days_applied: training_days_applied!, skill_point_awarded, new_skill_points },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/characters/:id/activity-points
+// ---------------------------------------------------------------------------
+
+router.get('/:id/activity-points', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) return next(createError('Invalid character ID', HTTP_STATUS.BAD_REQUEST));
+
+    const character = await prisma.character.findUnique({
+      where: { id },
+      select: { activity_points: true },
+    });
+    if (!character) return next(createError('Character not found', HTTP_STATUS.NOT_FOUND));
+
+    res.json({ success: true, data: { activity_points: character.activity_points } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/characters/:id/deduct-ap
+// ---------------------------------------------------------------------------
+
+router.post('/:id/deduct-ap', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) return next(createError('Invalid character ID', HTTP_STATUS.BAD_REQUEST));
+
+    const { cost, actionLabel } = req.body as { cost?: number; actionLabel?: string };
+    if (typeof cost !== 'number' || cost < 1) {
+      return next(createError('cost must be a positive number', HTTP_STATUS.BAD_REQUEST));
+    }
+
+    try {
+      await deductActivityPoints(id, cost, actionLabel ?? '');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to deduct activity points';
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: message });
+    }
+
+    const updated = await prisma.character.findUnique({
+      where: { id },
+      select: { activity_points: true },
+    });
+
+    res.json({ success: true, data: { activity_points: updated!.activity_points } });
   } catch (error) {
     next(error);
   }

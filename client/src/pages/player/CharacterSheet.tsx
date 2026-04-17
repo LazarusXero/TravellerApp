@@ -93,6 +93,9 @@ export function CharacterSheet() {
   const [editingSkillPoints, setEditingSkillPoints] = useState(false);
   const [spDraft, setSpDraft] = useState('');
 
+  // Activity Points (display only)
+  const [apPoints, setApPoints] = useState<number | null>(null);
+
   // Background / notes
   const [bgOpen, setBgOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -142,7 +145,12 @@ export function CharacterSheet() {
   }, []);
 
   useEffect(() => {
-    if (activeCharacter?.id) void fetchDetail(activeCharacter.id);
+    if (activeCharacter?.id) {
+      void fetchDetail(activeCharacter.id);
+      apiFetch<{ activity_points: number }>(`/api/characters/${activeCharacter.id}/activity-points`)
+        .then((res) => { if (res.success && res.data) setApPoints(res.data.activity_points); })
+        .catch(() => {});
+    }
   }, [activeCharacter?.id, fetchDetail]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
@@ -622,7 +630,7 @@ export function CharacterSheet() {
             <span>{char.colorScheme}</span>
           </div>
 
-          {/* Credits / SP */}
+          {/* Credits / SP / AP */}
           <div className="flex gap-3 pt-1">
             {/* Credits */}
             <div
@@ -650,6 +658,15 @@ export function CharacterSheet() {
                 <span className="font-bold text-emerald-400">Cr {char.credits.toLocaleString()}</span>
               )}
             </div>
+            {/* Activity Points */}
+            {apPoints !== null && (
+              <div className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm">
+                <span className="text-gray-500 text-xs block">Activity Points</span>
+                <span className={`font-bold ${apPoints === 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+                  ⚡ {apPoints} / 2
+                </span>
+              </div>
+            )}
             {/* Skill Points */}
             <div
               className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm cursor-pointer hover:border-gray-500 transition-colors"

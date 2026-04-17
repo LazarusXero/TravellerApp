@@ -71,6 +71,10 @@ router.post('/:id/advance-day', async (req: Request, res: Response, next: NextFu
       include: { current_world: { select: WORLD_SELECT } },
     });
 
+    await prisma.character.updateMany({
+      data: { activity_points: 2 },
+    });
+
     res.json({ success: true, data: game });
   } catch (error) {
     next(error);

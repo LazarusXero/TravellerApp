@@ -21,6 +21,7 @@ import { CharacterCreator } from './pages/player/CharacterCreator';
 import { CharacterSheet } from './pages/player/CharacterSheet';
 import { CharactersPage } from './pages/player/CharactersPage';
 import { SkillsPage } from './pages/player/SkillsPage';
+import { ActionsPage } from './pages/player/ActionsPage';
 import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
 
@@ -240,6 +241,16 @@ export default function App() {
                 <ProtectedRoute requiredRole="player">
                   <AppLayout showBanner>
                     <SkillsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/actions"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <ActionsPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

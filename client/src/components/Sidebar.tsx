@@ -93,6 +93,7 @@ const PLAYER_NAV: NavNode[] = [
       { to: '/player/characters', label: 'Characters' },
       { to: '/player/character',  label: 'Character Sheet' },
       { to: '/player/skills',     label: 'Skills' },
+      { to: '/player/actions',    label: 'Actions' },
       { to: '/player/inventory',  label: 'Inventory', placeholder: true },
     ],
   },

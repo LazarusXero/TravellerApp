@@ -52,6 +52,7 @@ model Character {
   last_salary_day     Int?
   skill_points        Int                @default(0)
   total_sp_earned     Int                @default(0)
+  activity_points     Int                @default(2)
   active_for_players  Player[]           @relation("ActiveCharacter")
   inventory           InventoryItem[]
   cargo_hold          CargoHold[]
