@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../hooks/useApi';
 import { getStatDM, getSkillDM } from '../../utils/characterUtils';
 import { CHARACTER_COLORS, SKILL_LIST, SKILL_CATEGORIES } from '../../constants/characters';
-import { useActiveCharacter } from '../../components/ActiveCharacterBanner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -39,6 +38,12 @@ interface CharacterDetail {
   character_skills: CharacterSkill[];
 }
 
+interface CharacterOption {
+  id: number;
+  playerName: string;
+  charName: string;
+}
+
 type StatKey = 'str' | 'dex' | 'end' | 'int' | 'edu' | 'soc';
 type SkillName = (typeof SKILL_LIST)[number];
 
@@ -70,15 +75,18 @@ function DmBadge({ dm, hex }: { dm: string; hex: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function CharacterSheet() {
-  const { player } = useAuth();
-  const { activeCharacter, loading: bannerLoading } = useActiveCharacter(player?.id ?? 0);
+export function GMCharacterSheet() {
+  const { characterId } = useParams<{ characterId: string }>();
+  const navigate = useNavigate();
 
   const [char, setChar] = useState<CharacterDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Skill state (local map for immediate UI updates)
+  // Character switcher
+  const [charOptions, setCharOptions] = useState<CharacterOption[]>([]);
+
+  // Skill state
   const [skillMap, setSkillMap] = useState<Map<string, number | null>>(new Map());
   const [savingSkills, setSavingSkills] = useState<Set<string>>(new Set());
 
@@ -106,21 +114,33 @@ export function CharacterSheet() {
   const [skillSearch, setSkillSearch] = useState('');
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
 
-  // Edit identity modal
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editDraft, setEditDraft] = useState({
-    name: '', species: '', age: '', gender: '', homeworld: '',
-  });
-  const [savingEdit, setSavingEdit] = useState(false);
-
   // Portrait
   const [uploadingPortrait, setUploadingPortrait] = useState(false);
   const portraitInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Fetch full character detail ─────────────────────────────────────────────
+  // ── Fetch character switcher options ──────────────────────────────────────
+
+  useEffect(() => {
+    apiFetch<{ id: number; name: string; characters: { id: number; name: string }[] }[]>(
+      '/api/gm/characters',
+    ).then((res) => {
+      if (res.success && res.data) {
+        const opts: CharacterOption[] = [];
+        for (const player of res.data) {
+          for (const c of player.characters) {
+            opts.push({ id: c.id, playerName: player.name, charName: c.name });
+          }
+        }
+        setCharOptions(opts);
+      }
+    });
+  }, []);
+
+  // ── Fetch character detail ────────────────────────────────────────────────
 
   const fetchDetail = useCallback(async (id: number) => {
     setDetailLoading(true);
+    setError(null);
     const res = await apiFetch<CharacterDetail>(`/api/characters/${id}`);
     if (res.success && res.data) {
       const c = res.data;
@@ -130,7 +150,6 @@ export function CharacterSheet() {
       setSkillMap(map);
       setBgDraft(c.background ?? '');
       setNotesDraft(c.notes ?? '');
-      setError(null);
     } else {
       setError(res.error ?? 'Failed to load character');
     }
@@ -138,38 +157,32 @@ export function CharacterSheet() {
   }, []);
 
   useEffect(() => {
-    if (activeCharacter?.id) void fetchDetail(activeCharacter.id);
-  }, [activeCharacter?.id, fetchDetail]);
+    const id = parseInt(characterId ?? '', 10);
+    if (!isNaN(id)) void fetchDetail(id);
+  }, [characterId, fetchDetail]);
 
-  // ── Derived ─────────────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const hex = char ? hexFor(char.colorScheme) : '#4FC3F7';
+  const charIdNum = parseInt(characterId ?? '', 10);
 
-  // ── Stat editing ────────────────────────────────────────────────────────────
+  // ── Stat editing ──────────────────────────────────────────────────────────
 
   function beginEditStat(key: StatKey) {
     if (!char) return;
     setEditingStat(key);
-    // null → empty string so the input starts blank, not "null"
     const current = char[key];
     setStatDraft(current !== null && current !== undefined ? String(current) : '');
   }
 
   async function commitStat() {
     if (!char || !editingStat) return;
-    // Empty input → cancel without saving
-    if (statDraft === '') {
-      setEditingStat(null);
-      return;
-    }
+    if (statDraft === '') { setEditingStat(null); return; }
     const val = parseInt(statDraft, 10);
-    if (isNaN(val) || val < 0 || val > 25) {
-      setEditingStat(null);
-      return;
-    }
+    if (isNaN(val) || val < 0 || val > 25) { setEditingStat(null); return; }
     setChar((prev) => prev ? { ...prev, [editingStat]: val } : prev);
     setEditingStat(null);
-    await apiFetch(`/api/characters/${char.id}`, {
+    await apiFetch(`/api/gm/characters/${char.id}`, {
       method: 'PUT',
       body: JSON.stringify({ [editingStat]: val }),
     });
@@ -181,7 +194,7 @@ export function CharacterSheet() {
     setEditingCredits(false);
     if (isNaN(val) || val < 0) return;
     setChar((prev) => prev ? { ...prev, credits: val } : prev);
-    await apiFetch(`/api/characters/${char.id}`, {
+    await apiFetch(`/api/gm/characters/${char.id}`, {
       method: 'PUT',
       body: JSON.stringify({ credits: val }),
     });
@@ -193,18 +206,18 @@ export function CharacterSheet() {
     setEditingSkillPoints(false);
     if (isNaN(val) || val < 0) return;
     setChar((prev) => prev ? { ...prev, skill_points: val } : prev);
-    await apiFetch(`/api/characters/${char.id}`, {
+    await apiFetch(`/api/gm/characters/${char.id}`, {
       method: 'PUT',
       body: JSON.stringify({ skill_points: val }),
     });
   }
 
-  // ── Text section save ───────────────────────────────────────────────────────
+  // ── Text section save ─────────────────────────────────────────────────────
 
   async function saveTextField(field: 'background' | 'notes', value: string) {
     if (!char) return;
     setSavingText(true);
-    await apiFetch(`/api/characters/${char.id}`, {
+    await apiFetch(`/api/gm/characters/${char.id}`, {
       method: 'PUT',
       body: JSON.stringify({ [field]: value }),
     });
@@ -212,31 +225,24 @@ export function CharacterSheet() {
     setSavingText(false);
   }
 
-  // ── Skill save ──────────────────────────────────────────────────────────────
+  // ── Skill save ────────────────────────────────────────────────────────────
 
-  async function saveSkill(skillName: string, level: number | null) {
+  async function saveSkill(skillName: SkillName, level: number | null) {
     if (!char) return;
     const prevLevel = skillMap.get(skillName) ?? null;
-    // Optimistic local update
     setSkillMap((m) => new Map(m).set(skillName, level));
     setSavingSkills((s) => new Set(s).add(skillName));
-    const res = await apiFetch(`/api/characters/${char.id}`, {
+    const res = await apiFetch(`/api/gm/characters/${char.id}`, {
       method: 'PUT',
       body: JSON.stringify({ skills: [{ skillName, level }] }),
     });
-    setSavingSkills((s) => {
-      const next = new Set(s);
-      next.delete(skillName);
-      return next;
-    });
+    setSavingSkills((s) => { const next = new Set(s); next.delete(skillName); return next; });
     if (!res.success) {
-      // Roll back optimistic update
       setSkillMap((m) => new Map(m).set(skillName, prevLevel));
-      console.error('[saveSkill] Failed to save', skillName, res.error);
     }
   }
 
-  // ── Portrait upload ─────────────────────────────────────────────────────────
+  // ── Portrait upload ───────────────────────────────────────────────────────
 
   async function handlePortraitUpload(file: File) {
     if (!char) return;
@@ -254,62 +260,17 @@ export function CharacterSheet() {
     setUploadingPortrait(false);
   }
 
-  // ── Identity edit modal ─────────────────────────────────────────────────────
-
-  function openEditModal() {
-    if (!char) return;
-    setEditDraft({
-      name: char.name,
-      species: char.species ?? '',
-      age: char.age !== null ? String(char.age) : '',
-      gender: char.gender ?? '',
-      homeworld: char.homeworld ?? '',
-    });
-    setShowEditModal(true);
-  }
-
-  async function saveEditModal() {
-    if (!char) return;
-    setSavingEdit(true);
-    const payload: Record<string, unknown> = {
-      name: editDraft.name.trim(),
-      species: editDraft.species.trim() || null,
-      gender: editDraft.gender.trim() || null,
-      homeworld: editDraft.homeworld.trim() || null,
-      age: editDraft.age ? parseInt(editDraft.age, 10) : null,
-    };
-    await apiFetch(`/api/characters/${char.id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
-    setChar((prev) =>
-      prev
-        ? {
-            ...prev,
-            name: payload.name as string,
-            species: payload.species as string | null,
-            gender: payload.gender as string | null,
-            homeworld: payload.homeworld as string | null,
-            age: payload.age as number | null,
-          }
-        : prev,
-    );
-    setSavingEdit(false);
-    setShowEditModal(false);
-  }
-
-  // ── Category helpers ────────────────────────────────────────────────────────
+  // ── Category helpers ──────────────────────────────────────────────────────
 
   function toggleCat(cat: string) {
     setOpenCats((prev) => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
       return next;
     });
   }
 
-  // ── Skill row ────────────────────────────────────────────────────────────────
+  // ── Skill row ─────────────────────────────────────────────────────────────
 
   function SkillRow({ skillName }: { skillName: string }) {
     const level = skillMap.get(skillName) ?? null;
@@ -323,7 +284,7 @@ export function CharacterSheet() {
             value={level === null || level === undefined ? '' : String(level)}
             onChange={(e) => {
               const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
-              void saveSkill(skillName, val);
+              void saveSkill(skillName as SkillName, val);
             }}
             className="bg-gray-800 border border-gray-700 rounded text-gray-100 text-sm px-1 py-0.5
                        focus:outline-none focus:ring-1 w-16"
@@ -357,13 +318,10 @@ export function CharacterSheet() {
       visibleSkills = [...SKILL_LIST];
     }
 
-    const trainedCount = [...skillMap.values()].filter(
-      (v) => v !== null && v !== undefined,
-    ).length;
+    const trainedCount = [...skillMap.values()].filter((v) => v !== null && v !== undefined).length;
 
     return (
       <div className="card space-y-4">
-        {/* Header row */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">Skills</h3>
           <div className="flex items-center gap-2">
@@ -373,7 +331,6 @@ export function CharacterSheet() {
               </span>{' '}
               trained
             </span>
-            {/* Toggle */}
             <div className="flex rounded-md overflow-hidden border border-gray-700 text-xs">
               {(['trained', 'all'] as const).map((v) => (
                 <button
@@ -393,7 +350,6 @@ export function CharacterSheet() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <input
             className="input pl-8 text-sm"
@@ -410,9 +366,7 @@ export function CharacterSheet() {
           </svg>
         </div>
 
-        {/* Skill content */}
         <div className="max-h-[480px] overflow-y-auto space-y-2 pr-0.5">
-          {/* Flat list when searching */}
           {isSearching ? (
             visibleSkills.length === 0 ? (
               <p className="text-gray-600 text-sm text-center py-6">No skills match "{skillSearch}"</p>
@@ -422,7 +376,6 @@ export function CharacterSheet() {
               </div>
             )
           ) : skillView === 'trained' ? (
-            /* Trained-only view — grouped by category, only non-null */
             visibleSkills.length === 0 ? (
               <p className="text-gray-600 text-sm py-4">No skills trained yet.</p>
             ) : (
@@ -446,7 +399,6 @@ export function CharacterSheet() {
               })
             )
           ) : (
-            /* All skills view — collapsible categories */
             Object.entries(SKILL_CATEGORIES).map(([cat, catSkills]) => {
               const isOpen = openCats.has(cat);
               const catTrained = catSkills.filter((s) => {
@@ -493,27 +445,10 @@ export function CharacterSheet() {
 
   // ── Loading / error states ────────────────────────────────────────────────
 
-  if (bannerLoading || detailLoading) {
+  if (detailLoading) {
     return (
       <div className="p-8">
         <p className="text-gray-700 text-sm">Loading character…</p>
-      </div>
-    );
-  }
-
-  if (!activeCharacter) {
-    return (
-      <div className="p-8 space-y-4">
-        <div>
-          <p className="text-nexus-500 text-xs uppercase tracking-widest mb-1">Character</p>
-          <h1 className="text-2xl font-bold text-gray-100">Character Sheet</h1>
-        </div>
-        <div className="card text-center py-12 space-y-3">
-          <p className="text-gray-400">No active character.</p>
-          <a href="/player/create-character" className="text-nexus-400 hover:text-nexus-300 text-sm transition-colors">
-            Create a character →
-          </a>
-        </div>
       </div>
     );
   }
@@ -532,7 +467,40 @@ export function CharacterSheet() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 max-w-5xl mx-auto">
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+
+      {/* ── NAV BAR ──────────────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <button
+          onClick={() => navigate('/gm/characters')}
+          className="text-gray-600 hover:text-gray-300 text-sm transition-colors"
+        >
+          ← All Characters
+        </button>
+
+        {charOptions.length > 0 && (
+          <select
+            value={charIdNum}
+            onChange={(e) => navigate(`/gm/characters/${e.target.value}`)}
+            className="bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm
+                       px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-nexus-600
+                       max-w-xs truncate"
+          >
+            {charOptions.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.playerName} — {opt.charName}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* ── HEADER ───────────────────────────────────────────────────────────── */}
+      <div>
+        <p className="text-nexus-500 text-xs uppercase tracking-widest mb-1">Players › Characters</p>
+        <h1 className="text-2xl font-bold leading-tight" style={{ color: hex }}>{char.name}</h1>
+      </div>
+
+      {/* ── IDENTITY CARD ────────────────────────────────────────────────────── */}
       <div className="card flex flex-col sm:flex-row gap-5">
         {/* Portrait */}
         <div className="shrink-0 flex flex-col items-center gap-2">
@@ -549,7 +517,6 @@ export function CharacterSheet() {
                 {char.name.charAt(0).toUpperCase()}
               </span>
             )}
-            {/* Hover overlay */}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity
                             flex items-center justify-center">
               <span className="text-white text-xs font-bold">
@@ -578,13 +545,13 @@ export function CharacterSheet() {
           />
         </div>
 
-        {/* Identity */}
+        {/* Identity (read-only for GM) */}
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold leading-tight" style={{ color: hex }}>
+              <h2 className="text-xl font-bold leading-tight" style={{ color: hex }}>
                 {char.name}
-              </h1>
+              </h2>
               <p className="text-gray-500 text-sm mt-1 space-x-2">
                 {char.species && <span>{char.species}</span>}
                 {char.age !== null && <span>Age {char.age}</span>}
@@ -592,28 +559,18 @@ export function CharacterSheet() {
                 {char.homeworld && <span>◉ {char.homeworld}</span>}
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {char.status !== 'ACTIVE' && (
-                <span className="badge bg-red-900/60 text-red-300 border border-red-800">
-                  {char.status}
-                </span>
-              )}
-              <button
-                onClick={openEditModal}
-                className="btn-secondary text-xs py-1.5"
-              >
-                Edit
-              </button>
-            </div>
+            {char.status !== 'ACTIVE' && (
+              <span className="badge bg-red-900/60 text-red-300 border border-red-800">
+                {char.status}
+              </span>
+            )}
           </div>
 
-          {/* Color swatch */}
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: hex }} />
             <span>{char.colorScheme}</span>
           </div>
 
-          {/* Credits / SP */}
           <div className="flex gap-3 pt-1">
             {/* Credits */}
             <div
@@ -672,7 +629,7 @@ export function CharacterSheet() {
         </div>
       </div>
 
-      {/* ── CHARACTERISTICS ────────────────────────────────────────────────── */}
+      {/* ── CHARACTERISTICS ──────────────────────────────────────────────────── */}
       <div className="card space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
           Characteristics
@@ -737,7 +694,7 @@ export function CharacterSheet() {
         <p className="text-gray-700 text-xs">Click a value to edit. Press Enter to save, Escape to cancel.</p>
       </div>
 
-      {/* ── BACKGROUND & NOTES ─────────────────────────────────────────────── */}
+      {/* ── BACKGROUND & NOTES ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Background */}
         <div className="card space-y-2">
@@ -765,10 +722,7 @@ export function CharacterSheet() {
                   />
                   <div className="flex gap-2">
                     <button
-                      onClick={async () => {
-                        await saveTextField('background', bgDraft);
-                        setEditingBg(false);
-                      }}
+                      onClick={async () => { await saveTextField('background', bgDraft); setEditingBg(false); }}
                       disabled={savingText}
                       className="text-xs px-3 py-1 rounded font-medium transition-colors disabled:opacity-40"
                       style={{ backgroundColor: hex + '33', color: hex }}
@@ -826,10 +780,7 @@ export function CharacterSheet() {
                   />
                   <div className="flex gap-2">
                     <button
-                      onClick={async () => {
-                        await saveTextField('notes', notesDraft);
-                        setEditingNotes(false);
-                      }}
+                      onClick={async () => { await saveTextField('notes', notesDraft); setEditingNotes(false); }}
                       disabled={savingText}
                       className="text-xs px-3 py-1 rounded font-medium transition-colors disabled:opacity-40"
                       style={{ backgroundColor: hex + '33', color: hex }}
@@ -862,79 +813,8 @@ export function CharacterSheet() {
         </div>
       </div>
 
-      {/* ── SKILLS ─────────────────────────────────────────────────────────── */}
+      {/* ── SKILLS ───────────────────────────────────────────────────────────── */}
       {renderSkills()}
-
-      {/* ── EDIT IDENTITY MODAL ────────────────────────────────────────────── */}
-      {showEditModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}
-        >
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md
-                          mx-4 shadow-2xl space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-gray-100">Edit Character</h2>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="text-gray-600 hover:text-gray-300 transition-colors text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { key: 'name', label: 'Name', required: true },
-                { key: 'species', label: 'Species', required: true },
-                { key: 'gender', label: 'Gender', required: false },
-                { key: 'homeworld', label: 'Homeworld', required: false },
-              ].map(({ key, label, required }) => (
-                <div key={key} className="space-y-1">
-                  <label className="text-xs text-gray-400 uppercase tracking-wider">
-                    {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-                  </label>
-                  <input
-                    className="input"
-                    value={editDraft[key as keyof typeof editDraft]}
-                    onChange={(e) =>
-                      setEditDraft((prev) => ({ ...prev, [key]: e.target.value }))
-                    }
-                  />
-                </div>
-              ))}
-              <div className="space-y-1">
-                <label className="text-xs text-gray-400 uppercase tracking-wider">Age</label>
-                <input
-                  className="input"
-                  type="number"
-                  min={0}
-                  value={editDraft.age}
-                  onChange={(e) => setEditDraft((prev) => ({ ...prev, age: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => void saveEditModal()}
-                disabled={savingEdit || !editDraft.name.trim()}
-                className="flex-1 py-2 rounded-lg font-bold text-sm transition-all
-                           disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ backgroundColor: hex, color: '#000' }}
-              >
-                {savingEdit ? 'Saving…' : 'Save Changes'}
-              </button>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

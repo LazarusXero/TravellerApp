@@ -7,6 +7,7 @@ import adminRouter from './admin.js';
 import worldsRouter from './worlds.js';
 import itemsRouter from './items.js';
 import charactersRouter from './characters.js';
+import gmCharactersRouter from './gmCharacters.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/admin', adminRouter);
 router.use('/worlds', worldsRouter);
 router.use('/items', itemsRouter);
 router.use('/characters', charactersRouter);
+router.use('/gm/characters', gmCharactersRouter);
 
 export default router;

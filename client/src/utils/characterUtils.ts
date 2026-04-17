@@ -1,3 +1,13 @@
+/**
+ * SP cost to advance a skill from currentLevel to the next level.
+ * null = Unskilled. Cost table: null→0: 1, 0→1: 1, n→n+1 (n≥1): 2^n
+ */
+export function getSkillUpgradeCost(currentLevel: number | null): number {
+  if (currentLevel === null) return 1;
+  if (currentLevel === 0)   return 1;
+  return 2 ** currentLevel;
+}
+
 export function getStatDM(score: number | null | undefined): string {
   if (score === null || score === undefined) return "—"
   if (score === 0) return "-3"

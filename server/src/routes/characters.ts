@@ -538,6 +538,8 @@ router.put('/:id/activate', async (req: Request, res: Response, next: NextFuncti
 // POST /api/characters/:id/train-skill
 // ---------------------------------------------------------------------------
 
+const TRAINING_DAYS_REQUIRED = 30;
+
 router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id), 10);
@@ -552,7 +554,7 @@ router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFu
 
     const character = await prisma.character.findUnique({
       where: { id },
-      select: { id: true, actions_spent_day: true },
+      select: { id: true, name: true, actions_spent_day: true, skill_points: true },
     });
     if (!character) return next(createError('Character not found', HTTP_STATUS.NOT_FOUND));
     if (character.actions_spent_day !== null && character.actions_spent_day === gameDay) {
@@ -564,25 +566,77 @@ router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFu
     });
 
     let training_days_applied: number;
-    if (existing) {
-      const updated = await prisma.skillTraining.update({
-        where: { id: existing.id },
-        data: { training_days_applied: { increment: 1 } },
-      });
-      training_days_applied = updated.training_days_applied;
-    } else {
-      const created = await prisma.skillTraining.create({
-        data: { character_id: id, skill_name, training_days_applied: 1, is_active: true, started_day: gameDay },
-      });
-      training_days_applied = created.training_days_applied;
-    }
+    let skill_point_awarded = false;
+    let new_skill_points: number | undefined;
 
-    await prisma.character.update({
-      where: { id },
-      data: { actions_spent_day: gameDay, action_type_today: 'train_skill' },
+    await prisma.$transaction(async (tx) => {
+      // Increment or create the training record
+      if (existing) {
+        const updated = await tx.skillTraining.update({
+          where: { id: existing.id },
+          data: { training_days_applied: { increment: 1 } },
+        });
+        training_days_applied = updated.training_days_applied;
+      } else {
+        const created = await tx.skillTraining.create({
+          data: { character_id: id, skill_name, training_days_applied: 1, is_active: true, started_day: gameDay },
+        });
+        training_days_applied = created.training_days_applied;
+      }
+
+      // Mark daily action spent
+      await tx.character.update({
+        where: { id },
+        data: { actions_spent_day: gameDay, action_type_today: 'train_skill' },
+      });
+
+      // Award SP when threshold is reached
+      if (training_days_applied >= TRAINING_DAYS_REQUIRED) {
+        skill_point_awarded = true;
+
+        // Complete this training cycle: mark inactive, reset days
+        if (existing) {
+          await tx.skillTraining.update({
+            where: { id: existing.id },
+            data: { is_active: false, training_days_applied: 0 },
+          });
+        }
+
+        // Award 1 SP to the character
+        const updatedChar = await tx.character.update({
+          where: { id },
+          data: { skill_points: { increment: 1 }, total_sp_earned: { increment: 1 } },
+          select: { skill_points: true },
+        });
+        new_skill_points = updatedChar.skill_points;
+
+        // Record the award
+        await tx.skillPointAward.create({
+          data: {
+            character_id: id,
+            points_awarded: 1,
+            source: 'training',
+            skill_name,
+          },
+        });
+
+        // Event log (silent on failure — handled by outer try/catch)
+        await tx.eventLog.create({
+          data: {
+            game_day: gameDay,
+            event_type: 'SKILL_TRAINING_COMPLETE',
+            character_id: id,
+            description: `${character.name} completed 30 days of ${skill_name} training and earned 1 SP`,
+            is_public: false,
+          },
+        });
+      }
     });
 
-    res.json({ success: true, data: { training_days_applied } });
+    res.json({
+      success: true,
+      data: { training_days_applied: training_days_applied!, skill_point_awarded, new_skill_points },
+    });
   } catch (error) {
     next(error);
   }
