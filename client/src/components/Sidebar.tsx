@@ -56,7 +56,7 @@ const GM_NAV: NavNode[] = [
     children: [
       { to: '/gm/world/information',  label: 'Information',  placeholder: true },
       { to: '/gm/world/store',        label: 'Store' },
-      { to: '/gm/world/black-market', label: 'Black Market', placeholder: true },
+      { to: '/gm/world/black-market', label: 'Black Market' },
       { to: '/gm/world/trade-goods',  label: 'Trade Goods',  placeholder: true },
       { to: '/gm/world/freight',      label: 'Freight',      placeholder: true },
       { to: '/gm/world/passengers',   label: 'Passengers',   placeholder: true },
@@ -118,7 +118,7 @@ const PLAYER_NAV: NavNode[] = [
     children: [
       { to: '/player/world/information',  label: 'Information',  placeholder: true },
       { to: '/player/world/store',        label: 'Store' },
-      { to: '/player/world/black-market', label: 'Black Market', placeholder: true },
+      { to: '/player/world/black-market', label: 'Black Market' },
       { to: '/player/world/trade-goods',  label: 'Trade Goods',  placeholder: true },
       { to: '/player/world/freight',      label: 'Freight',      placeholder: true },
       { to: '/player/world/passengers',   label: 'Passengers',   placeholder: true },

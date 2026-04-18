@@ -116,7 +116,7 @@ model Item {
   reference             String?
   description           String?
   active_in_game        Boolean          @default(false)
-  world_inventory       WorldInventory[]
+  bm_inventory          BMInventory[]
   inventory_items       InventoryItem[]
   store_inventory       StoreInventory[]
   created_at            DateTime         @default(now())
@@ -189,7 +189,8 @@ model World {
   subsector             String?
   notes                 String?
   game_as_current       Game[]
-  world_inventory       WorldInventory[]
+  bm_inventory          BMInventory[]
+  bm_unlocks            BlackMarketUnlock[]
   world_notes           WorldNote[]
   npcs                  NPC[]
   factions              Faction[]
@@ -204,22 +205,37 @@ model World {
   created_at            DateTime         @default(now())
 }
 
-model WorldInventory {
-  id                Int      @id @default(autoincrement())
-  world_id          Int
-  world             World    @relation(fields: [world_id], references: [id])
-  item_id           Int
-  item              Item     @relation(fields: [item_id], references: [id])
-  visit_day         Int
-  roll              Int
-  effective_roll    Int
-  bm_roll           Int?
-  effective_bm_roll Int?
-  bm_searcher_name  String?
-  bm_search_day     Int?
-  quantity_available Int     @default(1)
-  gm_override       Boolean  @default(false)
-  created_at        DateTime @default(now())
+model BMInventory {
+  id            Int      @id @default(autoincrement())
+  world_id      Int
+  world         World    @relation(fields: [world_id], references: [id])
+  item_id       Int
+  item          Item     @relation(fields: [item_id], references: [id])
+  visit_day     Int
+  bm_base_roll  Int
+  bm_final_roll Int?
+  bm_quantity   Int?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@unique([world_id, item_id])
+}
+
+model BlackMarketUnlock {
+  id            Int      @id @default(autoincrement())
+  world_id      Int
+  world         World    @relation(fields: [world_id], references: [id])
+  item_type     String
+  item_sub_type String
+  is_unlocked   Boolean  @default(false)
+  streetwise_dm Int      @default(0)
+  unlocked_by   String?
+  unlocked_day  Int?
+  gm_override   Boolean  @default(false)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@unique([world_id, item_type, item_sub_type])
 }
 
 model WorldNote {

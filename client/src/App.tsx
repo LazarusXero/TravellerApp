@@ -26,7 +26,9 @@ import { SkillsPage } from './pages/player/SkillsPage';
 import { ActionsPage } from './pages/player/ActionsPage';
 import { InventoryPage } from './pages/player/InventoryPage';
 import { GMStorePage } from './pages/gm/Store';
+import { GMBlackMarketPage } from './pages/gm/BlackMarket';
 import { PlayerStorePage } from './pages/player/Store';
+import { PlayerBlackMarketPage } from './pages/player/BlackMarket';
 import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
 
@@ -207,6 +209,16 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/gm/world/black-market"
+              element={
+                <ProtectedRoute requiredRole="gm">
+                  <AppLayout>
+                    <GMBlackMarketPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Player routes */}
             <Route
@@ -306,6 +318,16 @@ export default function App() {
                 <ProtectedRoute requiredRole="player">
                   <AppLayout showBanner>
                     <PlayerStorePage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/world/black-market"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <PlayerBlackMarketPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
