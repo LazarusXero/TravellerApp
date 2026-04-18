@@ -107,12 +107,13 @@ function StoreItemModal({
     setBuying(true);
     setError(null);
     try {
-      const playerRes = await fetch(`/api/players/${player.id}`).then((r) => r.json());
-      const characterId = playerRes.data?.active_character_id;
-      if (!characterId) {
+      const charsRes = await fetch(`/api/characters/player/${player.id}`).then((r) => r.json());
+      const activeChar = (charsRes.data ?? []).find((c: { isActive: boolean }) => c.isActive);
+      if (!activeChar) {
         setError('No active character found');
         return;
       }
+      const characterId = activeChar.id;
       const res = await fetch('/api/store/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -292,12 +293,10 @@ export function PlayerStorePage() {
     setRecords(storeRes.data ?? []);
 
     if (player) {
-      const playerRes = await fetch(`/api/players/${player.id}`).then((r) => r.json());
-      const activeCharId = playerRes.data?.active_character_id;
-      if (activeCharId) {
-        const charRes = await fetch(`/api/characters/${activeCharId}`).then((r) => r.json());
-        const char = charRes.data ?? charRes;
-        setCharacter({ id: char.id, credits: char.credits });
+      const charsRes = await fetch(`/api/characters/player/${player.id}`).then((r) => r.json());
+      const activeChar = (charsRes.data ?? []).find((c: { isActive: boolean }) => c.isActive);
+      if (activeChar) {
+        setCharacter({ id: activeChar.id, credits: activeChar.credits });
       }
     }
   };
@@ -349,8 +348,37 @@ export function PlayerStorePage() {
       if (!subMap.has(subKey)) subMap.set(subKey, []);
       subMap.get(subKey)!.push(r);
     }
-    return map;
+    for (const subMap of map.values()) {
+      for (const items of subMap.values()) {
+        items.sort((a, b) => a.item_name.localeCompare(b.item_name));
+      }
+    }
+    // Sort types and sub-types alphabetically
+    return new Map(
+      Array.from(map.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([type, subMap]) => [
+          type,
+          new Map(Array.from(subMap.entries()).sort(([a], [b]) => a.localeCompare(b))),
+        ])
+    );
   }, [filtered]);
+
+  const allGroupKeys = useMemo(() => {
+    const keys: string[] = [];
+    for (const [type, subMap] of grouped.entries()) {
+      keys.push(`type:${type}`);
+      for (const subType of subMap.keys()) {
+        keys.push(`sub:${type}::${subType}`);
+      }
+    }
+    return keys;
+  }, [grouped]);
+
+  const allCollapsed = allGroupKeys.length > 0 && allGroupKeys.every((k) => collapsed.has(k));
+
+  const toggleCollapseAll = () =>
+    setCollapsed(allCollapsed ? new Set() : new Set(allGroupKeys));
 
   const toggleCollapse = (key: string) => {
     setCollapsed((prev) => {
@@ -505,6 +533,14 @@ export function PlayerStorePage() {
             className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors"
           >
             Clear Filters
+          </button>
+
+          <button
+            onClick={toggleCollapseAll}
+            disabled={allGroupKeys.length === 0}
+            className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-40"
+          >
+            {allCollapsed ? 'Expand All' : 'Collapse All'}
           </button>
         </div>
       )}
