@@ -106,6 +106,14 @@ export async function generateBMForWorld(worldId: number, gameDay: number): Prom
     },
   });
 
+  const eligibleIds = new Set(items.map((i) => i.id));
+  await prisma.bMInventory.deleteMany({
+    where: {
+      world_id: worldId,
+      item_id: { notIn: [...eligibleIds] },
+    },
+  });
+
   for (const item of items) {
     const tlDm = getTlDm(item.tech_level, worldTl);
     const bmCatDm = getBmCategoryDm(item.black_market_category);
