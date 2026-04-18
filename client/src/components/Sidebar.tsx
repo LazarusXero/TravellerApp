@@ -55,7 +55,7 @@ const GM_NAV: NavNode[] = [
     kind: 'section', label: 'World', icon: '◉', storageKey: 'gm_world',
     children: [
       { to: '/gm/world/information',  label: 'Information',  placeholder: true },
-      { to: '/gm/world/store',        label: 'Store',        placeholder: true },
+      { to: '/gm/world/store',        label: 'Store' },
       { to: '/gm/world/black-market', label: 'Black Market', placeholder: true },
       { to: '/gm/world/trade-goods',  label: 'Trade Goods',  placeholder: true },
       { to: '/gm/world/freight',      label: 'Freight',      placeholder: true },
@@ -117,7 +117,7 @@ const PLAYER_NAV: NavNode[] = [
     kind: 'section', label: 'World', icon: '◉', storageKey: 'player_world',
     children: [
       { to: '/player/world/information',  label: 'Information',  placeholder: true },
-      { to: '/player/world/store',        label: 'Store',        placeholder: true },
+      { to: '/player/world/store',        label: 'Store' },
       { to: '/player/world/black-market', label: 'Black Market', placeholder: true },
       { to: '/player/world/trade-goods',  label: 'Trade Goods',  placeholder: true },
       { to: '/player/world/freight',      label: 'Freight',      placeholder: true },

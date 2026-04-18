@@ -9,6 +9,7 @@ import itemsRouter from './items.js';
 import charactersRouter from './characters.js';
 import gmCharactersRouter from './gmCharacters.js';
 import inventoryRouter from './inventory.js';
+import storeRouter from './store.js';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/items', itemsRouter);
 router.use('/characters', charactersRouter);
 router.use('/gm/characters', gmCharactersRouter);
 router.use('/inventory', inventoryRouter);
+router.use('/store', storeRouter);
 
 export default router;

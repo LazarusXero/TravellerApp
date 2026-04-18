@@ -25,6 +25,8 @@ import { CharactersPage } from './pages/player/CharactersPage';
 import { SkillsPage } from './pages/player/SkillsPage';
 import { ActionsPage } from './pages/player/ActionsPage';
 import { InventoryPage } from './pages/player/InventoryPage';
+import { GMStorePage } from './pages/gm/Store';
+import { PlayerStorePage } from './pages/player/Store';
 import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
 
@@ -195,6 +197,16 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/gm/world/store"
+              element={
+                <ProtectedRoute requiredRole="gm">
+                  <AppLayout>
+                    <GMStorePage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Player routes */}
             <Route
@@ -284,6 +296,16 @@ export default function App() {
                 <ProtectedRoute requiredRole="player">
                   <AppLayout showBanner>
                     <InventoryPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/player/world/store"
+              element={
+                <ProtectedRoute requiredRole="player">
+                  <AppLayout showBanner>
+                    <PlayerStorePage />
                   </AppLayout>
                 </ProtectedRoute>
               }
