@@ -134,17 +134,20 @@ router.patch('/:id/set-world', async (req: Request, res: Response, next: NextFun
   }
 });
 
-// PATCH /api/game/:id/set-jump — enter jump space, clears current world
+// PATCH /api/game/:id/set-jump — enter jump space, clears current world and store
 router.patch('/:id/set-jump', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) return next(createError('Invalid game ID', HTTP_STATUS.BAD_REQUEST));
 
-    const game = await prisma.game.update({
-      where: { id },
-      data: { in_jump_space: true, current_world_id: null },
-      include: { current_world: { select: WORLD_SELECT } },
-    });
+    const [game] = await prisma.$transaction([
+      prisma.game.update({
+        where: { id },
+        data: { in_jump_space: true, current_world_id: null },
+        include: { current_world: { select: WORLD_SELECT } },
+      }),
+      prisma.storeInventory.deleteMany({ where: { game_id: id } }),
+    ]);
 
     res.json({ success: true, data: game });
   } catch (error) {

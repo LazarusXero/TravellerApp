@@ -522,6 +522,11 @@ router.put('/:id/activate', async (req: Request, res: Response, next: NextFuncti
         where: { id },
         data: { isActive: true },
       }),
+      // Keep Player.active_character_id in sync
+      prisma.player.update({
+        where: { id: character.player_id },
+        data: { active_character_id: id },
+      }),
     ]);
 
     const updated = await prisma.character.findUnique({

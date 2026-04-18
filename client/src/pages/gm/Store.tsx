@@ -44,7 +44,7 @@ interface Filters {
   law_max: string;
   cost_min: string;
   cost_max: string;
-  show_unavailable: boolean;
+  availability: 'all' | 'available' | 'unavailable';
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ const DEFAULT_FILTERS: Filters = {
   tl_min: '', tl_max: '',
   law_min: '', law_max: '',
   cost_min: '', cost_max: '',
-  show_unavailable: true,
+  availability: 'all',
 };
 
 function fmtCr(n: number): string {
@@ -326,7 +326,8 @@ export function GMStorePage() {
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
-      if (!filters.show_unavailable && r.quantity === 0) return false;
+      if (filters.availability === 'available' && r.quantity === 0) return false;
+      if (filters.availability === 'unavailable' && r.quantity > 0) return false;
       if (filters.type && r.item_type !== filters.type) return false;
       if (filters.sub_type && r.item_sub_type !== filters.sub_type) return false;
       if (filters.tl_min !== '' && r.tech_level < parseInt(filters.tl_min)) return false;
@@ -348,8 +349,37 @@ export function GMStorePage() {
       if (!subMap.has(subKey)) subMap.set(subKey, []);
       subMap.get(subKey)!.push(r);
     }
-    return map;
+    for (const subMap of map.values()) {
+      for (const items of subMap.values()) {
+        items.sort((a, b) => a.item_name.localeCompare(b.item_name));
+      }
+    }
+    // Sort types and sub-types alphabetically
+    return new Map(
+      Array.from(map.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([type, subMap]) => [
+          type,
+          new Map(Array.from(subMap.entries()).sort(([a], [b]) => a.localeCompare(b))),
+        ])
+    );
   }, [filtered]);
+
+  const allGroupKeys = useMemo(() => {
+    const keys: string[] = [];
+    for (const [type, subMap] of grouped.entries()) {
+      keys.push(`type:${type}`);
+      for (const subType of subMap.keys()) {
+        keys.push(`sub:${type}::${subType}`);
+      }
+    }
+    return keys;
+  }, [grouped]);
+
+  const allCollapsed = allGroupKeys.length > 0 && allGroupKeys.every((k) => collapsed.has(k));
+
+  const toggleCollapseAll = () =>
+    setCollapsed(allCollapsed ? new Set() : new Set(allGroupKeys));
 
   const toggleCollapse = (key: string) => {
     setCollapsed((prev) => {
@@ -503,19 +533,33 @@ export function GMStorePage() {
             </div>
           </div>
 
-          {/* Show unavailable toggle */}
+          {/* Availability toggle */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-600 uppercase tracking-wider">Show</label>
-            <label className="flex items-center gap-2 cursor-pointer h-[34px]">
-              <input
-                type="checkbox"
-                checked={filters.show_unavailable}
-                onChange={(e) => setFilter('show_unavailable', e.target.checked)}
-                className="w-3.5 h-3.5 accent-nexus-500"
-              />
-              <span className="text-xs text-gray-400">Unavailable</span>
-            </label>
+            <div className="flex rounded-lg overflow-hidden border border-gray-700 h-[34px]">
+              {(['all', 'available', 'unavailable'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => setFilter('availability', opt)}
+                  className={`px-3 text-xs font-medium transition-colors capitalize ${
+                    filters.availability === opt
+                      ? 'bg-nexus-700 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                  }`}
+                >
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <button
+            onClick={toggleCollapseAll}
+            disabled={allGroupKeys.length === 0}
+            className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-40"
+          >
+            {allCollapsed ? 'Expand All' : 'Collapse All'}
+          </button>
 
           <button
             onClick={clearFilters}
@@ -523,6 +567,7 @@ export function GMStorePage() {
           >
             Clear Filters
           </button>
+
         </div>
       )}
 
