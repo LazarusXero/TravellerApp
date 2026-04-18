@@ -3,6 +3,7 @@ import { prisma } from '../engine/index.js';
 import { createError } from '../middleware/index.js';
 import { HTTP_STATUS } from '../constants/index.js';
 import { generateStore } from '../services/storeService.js';
+import { generateBMForWorld } from '../utils/blackMarket.js';
 
 const router = Router();
 
@@ -123,9 +124,12 @@ router.patch('/:id/set-world', async (req: Request, res: Response, next: NextFun
       include: { current_world: { select: WORLD_SELECT } },
     });
 
-    // Generate fresh store for the new world (fire-and-forget; don't block response)
+    // Generate fresh store and BM inventory for the new world
     generateStore(game.id).catch((err) =>
       console.error('[store] Generation failed after set-world:', err)
+    );
+    generateBMForWorld(world_id, game.day).catch((err) =>
+      console.error('[blackMarket] Generation failed after set-world:', err)
     );
 
     res.json({ success: true, data: game });

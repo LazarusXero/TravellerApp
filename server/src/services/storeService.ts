@@ -60,9 +60,9 @@ export async function generateStore(gameId: number): Promise<number> {
 
   if (!world) return 0;
 
-  const worldTl = parseInt(world.technology, 10) || 0;
-  const worldLaw = parseInt(world.law, 10) || 0;
-  const worldPop = parseInt(world.population, 10) || 0;
+  const worldTl = parseInt(world.technology, 16) || 0;
+  const worldLaw = parseInt(world.law, 16) || 0;
+  const worldPop = parseInt(world.population, 16) || 0;
 
   // Party skill DM — highest broker or streetwise across all characters
   const allSkills = await prisma.characterSkill.findMany({
@@ -82,10 +82,10 @@ export async function generateStore(gameId: number): Promise<number> {
   const tradeDm = getTradeDm(world.trade_codes ?? '');
   const popDm = getPopulationDm(worldPop);
 
-  // All items with law_level <= worldLaw and active_in_game = true
+  // All items with law_level >= worldLaw and active_in_game = true
   const items = await prisma.item.findMany({
     where: {
-      law_level: { lte: worldLaw },
+      law_level: { gte: worldLaw },
       active_in_game: true,
     },
     select: {
