@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../engine/index.js';
 import { createError } from '../middleware/index.js';
 import { HTTP_STATUS } from '../constants/index.js';
+import { generateStore } from '../services/storeService.js';
 
 const router = Router();
 
@@ -121,6 +122,11 @@ router.patch('/:id/set-world', async (req: Request, res: Response, next: NextFun
       data: { current_world_id: world_id, in_jump_space: false },
       include: { current_world: { select: WORLD_SELECT } },
     });
+
+    // Generate fresh store for the new world (fire-and-forget; don't block response)
+    generateStore(game.id).catch((err) =>
+      console.error('[store] Generation failed after set-world:', err)
+    );
 
     res.json({ success: true, data: game });
   } catch (error) {

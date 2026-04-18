@@ -78,20 +78,21 @@ model CharacterSkill {
 }
 
 model Game {
-  id                      Int      @id @default(autoincrement())
+  id                      Int               @id @default(autoincrement())
   name                    String
   current_world_id        Int?
-  current_world           World?   @relation(fields: [current_world_id], references: [id])
-  in_jump_space           Boolean  @default(false)
-  day                     Int      @default(1)
+  current_world           World?            @relation(fields: [current_world_id], references: [id])
+  in_jump_space           Boolean           @default(false)
+  day                     Int               @default(1)
   milieu                  String?
-  is_drinax               Boolean  @default(true)
-  imperium_standing       Int      @default(0)
-  hierate_standing        Int      @default(-5)
+  is_drinax               Boolean           @default(true)
+  imperium_standing       Int               @default(0)
+  hierate_standing        Int               @default(-5)
   imperium_bounty         Int?
   hierate_bounty          Int?
-  combat_round            Int      @default(0)
-  created_at              DateTime @default(now())
+  combat_round            Int               @default(0)
+  store_inventory         StoreInventory[]
+  created_at              DateTime          @default(now())
 }
 
 model Item {
@@ -117,7 +118,24 @@ model Item {
   active_in_game        Boolean          @default(false)
   world_inventory       WorldInventory[]
   inventory_items       InventoryItem[]
+  store_inventory       StoreInventory[]
   created_at            DateTime         @default(now())
+}
+
+model StoreInventory {
+  id               Int      @id @default(autoincrement())
+  game_id          Int
+  item_id          Int
+  base_roll        Int
+  final_roll       Int
+  quantity         Int
+  price_multiplier Float    @default(1.0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  game             Game     @relation(fields: [game_id], references: [id])
+  item             Item     @relation(fields: [item_id], references: [id])
+
+  @@unique([game_id, item_id])
 }
 
 model SkillTraining {
