@@ -121,14 +121,20 @@ function UwpRow({ label, code, detail }: { label: string; code: string; detail?:
 export function WorldModal({ world, gmMode, onClose, onUpdate }: Props) {
   const [notes, setNotes] = useState(world.notes ?? '');
   const [saving, setSaving] = useState(false);
+  const [showTradeRef, setShowTradeRef] = useState(false);
+
   const backdropRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape
+  // Close on Escape — trade ref modal takes priority when open
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showTradeRef) { setShowTradeRef(false); }
+      else { onClose(); }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, showTradeRef]);
 
   const saveNotes = async () => {
     if (!gmMode || notes === (world.notes ?? '')) return;
@@ -194,7 +200,18 @@ export function WorldModal({ world, gmMode, onClose, onUpdate }: Props) {
           {/* Trade Codes + Flags */}
           {(world.trade_codes || flags.length > 0) && (
             <section>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Codes &amp; Flags</h3>
+              <div className="flex items-center gap-1.5 mb-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Codes &amp; Flags</h3>
+                <button
+                  onClick={() => setShowTradeRef(true)}
+                  title="Trade code reference"
+                  className="text-gray-600 hover:text-gray-400 transition-colors leading-none"
+                  style={{ fontSize: '0.7rem' }}
+                  aria-label="Open trade code reference"
+                >
+                  ⓘ
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {world.trade_codes?.split(/\s+/).filter(Boolean).map((tc) => (
                   <span key={tc} className="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono">{tc}</span>
@@ -268,6 +285,75 @@ export function WorldModal({ world, gmMode, onClose, onUpdate }: Props) {
           ) : null}
         </div>
       </div>
+
+      {showTradeRef && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          style={{ zIndex: 60 }}
+          onClick={() => setShowTradeRef(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Trade Code Reference"
+        >
+          <div
+            className="relative bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-200">Trade Code Reference</h2>
+                {world.trade_codes && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    <span className="text-gray-600">{world.name}: </span>
+                    {world.trade_codes.trim().split(/\s+/).map((tc) => (
+                      <span key={tc} className="font-mono text-nexus-400 mr-1.5">{tc}</span>
+                    ))}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowTradeRef(false)}
+                className="text-gray-600 hover:text-gray-300 text-xl leading-none"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
+              <table className="w-full text-xs">
+                <tbody>
+                  {[
+                    ['Ag', 'Agricultural'],
+                    ['As', 'Asteroid'],
+                    ['Ba', 'Barren'],
+                    ['De', 'Desert'],
+                    ['Fl', 'Fluid'],
+                    ['Ga', 'Garden World'],
+                    ['Hi', 'High Population'],
+                    ['Ht', 'High-Tech'],
+                    ['Ic', 'Icy World'],
+                    ['In', 'Industrial'],
+                    ['Lo', 'Low Population'],
+                    ['Lt', 'Low-Tech'],
+                    ['Na', 'Non-Agricultural'],
+                    ['Ni', 'Non-Industrial'],
+                    ['Po', 'Poor World'],
+                    ['Pz', 'Dangerous World (Caution)'],
+                    ['Ri', 'Rich World'],
+                    ['Va', 'Vacuum World'],
+                    ['Wa', 'Water World'],
+                  ].map(([code, desc]) => (
+                    <tr key={code} className="border-b border-gray-800 last:border-0">
+                      <td className="py-1.5 pr-4 font-mono text-nexus-400 w-10">{code}</td>
+                      <td className="py-1.5 text-gray-300">{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
