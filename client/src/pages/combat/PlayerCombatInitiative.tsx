@@ -67,17 +67,6 @@ interface CharacterCombatRoleRecord {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function statDMNum(score: number | null | undefined): number {
-  if (score == null) return 0;
-  if (score === 0) return -3;
-  if (score <= 2) return -2;
-  if (score <= 5) return -1;
-  if (score <= 8) return 0;
-  if (score <= 11) return 1;
-  if (score <= 14) return 2;
-  return 3;
-}
-
 function fmtSign(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
 }
