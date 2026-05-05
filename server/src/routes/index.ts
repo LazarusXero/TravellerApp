@@ -11,6 +11,7 @@ import gmCharactersRouter from './gmCharacters.js';
 import inventoryRouter from './inventory.js';
 import storeRouter from './store.js';
 import blackMarketRouter from './blackMarket.js';
+import combatRouter from './combat.js';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/gm/characters', gmCharactersRouter);
 router.use('/inventory', inventoryRouter);
 router.use('/store', storeRouter);
 router.use('/black-market', blackMarketRouter);
+router.use('/combat', combatRouter);
 
 export default router;

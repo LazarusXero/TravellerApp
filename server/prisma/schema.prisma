@@ -63,6 +63,7 @@ model Character {
   event_logs          EventLog[]
   skill_point_awards  SkillPointAward[]
   crew_hired          CrewMember[]
+  combat_roles        CharacterCombatRole[]
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
 }
@@ -429,28 +430,29 @@ model InvestmentAction {
 }
 
 model Ship {
-  id                 Int          @id @default(autoincrement())
+  id                 Int            @id @default(autoincrement())
   name               String
   ship_class         String
   displacement_tons  Int
   hull_points        Int
-  hull_damage        Int          @default(0)
-  hull_severity      Int          @default(0)
+  hull_damage        Int            @default(0)
+  hull_severity      Int            @default(0)
   jump_rating        Int
   thrust_rating      Int
   current_thrust     Int?
   fuel_capacity      Int
   fuel_current       Int
   cargo_capacity     Int
-  staterooms         Int          @default(0)
-  cryopods           Int          @default(0)
-  credits            Int          @default(0)
+  staterooms         Int            @default(0)
+  cryopods           Int            @default(0)
+  credits            Int            @default(0)
   mortgage_per_month Int?
-  armour             Int          @default(0)
+  armour             Int            @default(0)
   notes              String?
   systems            ShipSystem[]
   weapons            ShipWeapon[]
-  created_at         DateTime     @default(now())
+  combat_objects     CombatObject[]
+  created_at         DateTime       @default(now())
 }
 
 model ShipSystem {
@@ -538,6 +540,303 @@ model MissileSalvo {
   rounds_elapsed   Int      @default(0)
   status           String   @default("in_flight")
   created_at       DateTime @default(now())
+}
+
+model CombatSession {
+  id             Int               @id @default(autoincrement())
+  game_id        Int
+  name           String
+  active         Boolean           @default(true)
+  current_phase  String            @default("SETUP")
+  // 'SETUP'|'INITIATIVE'|'MANOEUVRE'|'ATTACK'|'ACTION'|'CLEANUP'
+  current_round  Int               @default(1)
+  created_at     DateTime          @default(now())
+  ended_at       DateTime?
+  objects        CombatObject[]
+  ranges         CombatRange[]
+  system_hits    CombatSystemHit[]
+  boarding       BoardingAction?
+  combat_roles   CharacterCombatRole[]
+}
+
+// End-of-round cleanup resets per CombatObject:
+//   move_intent    → reset to null
+//   move_target_id → reset to null
+//   thrust_spent   → reset to 0
+model CombatObject {
+  id                         Int                 @id @default(autoincrement())
+  session_id                 Int
+  session                    CombatSession       @relation(fields: [session_id], references: [id])
+  ship_id                    Int?
+  ship                       Ship?               @relation(fields: [ship_id], references: [id])
+  object_type                String
+  // 'SHIP'|'PLANET'|'STATION'|'MISSILE_SALVO'
+  name                       String
+  is_player_ship             Boolean             @default(false)
+  is_destroyed               Boolean             @default(false)
+  is_active                  Boolean             @default(true)
+  added_round                Int                 @default(1)
+  initiative                 Int?
+
+  // Movement intent — reset to null each round during cleanup
+  move_intent                String?
+  // 'CLOSE'|'FLEE'|'HOLD' — null means no movement this round
+  move_target_id             Int?
+  // ID of the object this object is moving relative to
+  // null for planets, stations, and objects that did not move
+  thrust_spent               Int                 @default(0)
+  // thrust points committed this round, reset to 0 during cleanup
+
+  // Ship core stats
+  tl                         Int?
+  size_tons                  Int?
+  max_thrust                 Int?
+  adjusted_max_thrust        Int?
+  current_thrust             Int?
+  base_armor                 Int?
+  current_armor              Int?
+  hull_max                   Int?
+  hull_current               Int?
+  hull_severity              Int                 @default(0)
+  sustained_damage_threshold Int?
+  fuel_capacity              Float?
+  fuel_current               Float?
+  fuel_leak_rate             Float               @default(0)
+  fuel_tank_status           String?             // 'Intact'|'Destroyed'
+  power_max                  Float?
+  power_max_base             Float?              // immutable base; power_max is current (reduced by crits)
+  power_used                 Float?
+  computer_rating            Int?
+  current_computer_rating    Int?
+  computer_status            String?
+  // 'Operational'|'Disabled'|'Destroyed'
+  life_support_status        String?
+  // 'Operational'|'Failing'|'Failed'
+  life_support_timer         Int?
+  j_drive_check_dm           Int                 @default(0)
+  j_drive_status             String?
+  // 'Operable'|'Disabled'|'Damaged'|'Destroyed'
+  m_drive_check_dm           Int                 @default(0)
+  m_drive_thrust_mod         Int                 @default(0)
+  m_drive_status             String?
+  // 'Operable'|'Operable - Damaged'|'Destroyed'
+  cargo_weight               Float?
+  cargo_value                Float?
+  cargo_status               String?             // 'Intact'|'Destroyed'
+  sensor_check_dm            Int                 @default(0)
+  sensor_range               String?
+  // 'Distant'|'Medium'|'Short'|'Close'|'Adjacent'
+  sensor_status              String?             // 'Operable'|'Disabled'
+  sensor_lock_status         String              @default("NO SENSOR LOCK")
+  // 'SENSOR LOCKED'|'NO SENSOR LOCK'
+  comms_jammed               Boolean             @default(false)
+  overload_drive_dm          Int                 @default(0)
+  overload_power_dm          Int                 @default(0)
+  increase_thrust_next       Boolean             @default(false)
+  increase_power_next        Boolean             @default(false)
+  ew_used                    Boolean             @default(false)
+  leadership_effect          Int                 @default(0)
+
+  // NPC crew skill DMs (for GM-controlled ships)
+  pilot_skill_dm             Int?
+  leadership_skill_dm        Int?
+  naval_tactics_dm           Int?
+  captain_soc_dm             Int?
+  gunner_skill_dm            Int?
+  gunner_dex_dm              Int?
+  engineer_skill_dm          Int?
+  engineer_int_dm            Int?
+  sensor_op_skill_dm         Int?
+  sensor_op_int_dm           Int?
+  marines                    Int                 @default(0)
+  passengers                 Int                 @default(0)
+
+  // Missile salvo specific
+  origin_object_id           Int?
+  target_object_id           Int?
+  missile_thrust             Int?
+  missile_quantity           Int?
+  rounds_to_contact          Int?
+
+  // Planet specific
+  radius_km                  Int?
+  jump_distance_km           Int?
+
+  ranges_from                CombatRange[]       @relation("RangeFrom")
+  ranges_to                  CombatRange[]       @relation("RangeTo")
+  system_hits                CombatSystemHit[]
+  weapon_mounts              CombatWeaponMount[]
+  crew_members               CombatCrewMember[]
+  repair_progress            RepairProgress[]
+}
+
+// DEVELOPER NOTE — Range model conventions:
+//
+// Range between any two objects is symmetrical. Only one CombatRange
+// record exists per pair. At creation time, always store the record
+// as (lower_id → higher_id) to enforce consistency.
+//
+// When querying range between object A and object B, check for either:
+//   (from_object_id = A.id AND to_object_id = B.id)
+//   OR
+//   (from_object_id = B.id AND to_object_id = A.id)
+// whichever exists is the correct record.
+//
+// When resolving movement, find all CombatRange records involving the
+// moving object. For each range pair, determine net thrust point change:
+//
+//   Both objects CLOSE on each other  → subtract both thrust_spent values
+//   Both objects FLEE from each other → add both thrust_spent values
+//   One CLOSE, one FLEE               → subtract the difference
+//   One moves, one HOLDS              → apply only the mover's thrust_spent
+//
+// After updating thrust_points, recalculate band using the thresholds above.
+// Clamp thrust_points to minimum 0 (cannot go below ADJACENT).
+//
+// DIAGRAM RENDERING — ego-centric, always built from one reference object:
+//
+// To render the combat diagram for any object (player ship or GM ship):
+//   1. Set that object as the reference — it always appears at the far left
+//   2. Query all CombatRange records where from_object_id OR to_object_id
+//      equals the reference object's id
+//   3. Place each other object in the column matching its band value
+//   4. Render directional arrows from each other object's move_intent:
+//      - other.move_target_id == reference.id AND move_intent == 'CLOSE' → <<
+//      - other.move_target_id == reference.id AND move_intent == 'FLEE'  → >>
+//      - other.move_target_id != reference.id AND move_intent == 'CLOSE' → <
+//      - other.move_target_id != reference.id AND move_intent == 'FLEE'  → >
+//      - move_intent == 'HOLD' or null → no arrow
+//
+// The diagram component must accept a referenceObjectId prop so it can
+// be rendered from any object's perspective without code changes.
+model CombatRange {
+  id                 Int           @id @default(autoincrement())
+  session_id         Int
+  session            CombatSession @relation(fields: [session_id], references: [id])
+  from_object_id     Int
+  from_object        CombatObject  @relation("RangeFrom", fields: [from_object_id], references: [id])
+  to_object_id       Int
+  to_object          CombatObject  @relation("RangeTo", fields: [to_object_id], references: [id])
+  thrust_points      Int           @default(44)
+  // thrust point difference between the two objects
+  // band thresholds:
+  // 0-1:   ADJACENT
+  // 1-2:   CLOSE
+  // 2-4:   SHORT
+  // 4-9:   MEDIUM
+  // 9-19:  LONG
+  // 19-44: VERY LONG
+  // 44-94: DISTANT
+  band               String        @default("VERY LONG")
+  last_updated_round Int           @default(1)
+
+  @@unique([session_id, from_object_id, to_object_id])
+}
+
+model CombatSystemHit {
+  id             Int           @id @default(autoincrement())
+  session_id     Int
+  session        CombatSession @relation(fields: [session_id], references: [id])
+  object_id      Int
+  object         CombatObject  @relation(fields: [object_id], references: [id])
+  system_name    String
+  // 'Sensors'|'Power Plant'|'Fuel'|'Weapon'|'Armor'|'Hull'|
+  // 'M-Drive'|'Cargo'|'J-Drive'|'Crew'|'Computer'
+  severity       Int           @default(1)
+  max_severity   Int           @default(1)
+  repaired       Boolean       @default(false)
+  beyond_repair  Boolean       @default(false)
+  recorded_round Int           @default(1)
+  created_at     DateTime      @default(now())
+
+  @@unique([session_id, object_id, system_name])
+}
+
+model CombatWeaponMount {
+  id               Int            @id @default(autoincrement())
+  object_id        Int
+  object           CombatObject   @relation(fields: [object_id], references: [id])
+  mount_type       String
+  // 'Fixed'|'Single Turret'|'Double Turret'|'Triple Turret'
+  mount_status     String         @default("Operational")
+  // 'Operational'|'Bane'|'Disabled'|'Destroyed'
+  point_defense_dm Int            @default(0)
+  ammo_status      String         @default("Full")
+  // 'Full'|'Fired'|'Reloading'|'Empty'
+  weapons          CombatWeapon[]
+}
+
+model CombatWeapon {
+  id             Int               @id @default(autoincrement())
+  mount_id       Int
+  mount          CombatWeaponMount @relation(fields: [mount_id], references: [id])
+  weapon_type    String
+  // 'Beam Laser'|'Pulse Laser'|'Missile Rack'|'Sandcaster'|'Ion Cannon'
+  damage         String
+  range          String
+  traits         String?
+  ammo_count     Int               @default(0)
+  power_required Int               @default(0)
+}
+
+model CombatCrewMember {
+  id         Int          @id @default(autoincrement())
+  object_id  Int
+  object     CombatObject @relation(fields: [object_id], references: [id])
+  name       String
+  role       String
+  hp_max     Int
+  hp_current Int
+  status     String       @default("Active")
+  // 'Active'|'Wounded'|'Incapacitated'|'Dead'
+}
+
+model RepairProgress {
+  id                Int          @id @default(autoincrement())
+  object_id         Int
+  object            CombatObject @relation(fields: [object_id], references: [id])
+  character_id      Int
+  system_name       String
+  consecutive_bonus Int          @default(0)
+
+  @@unique([object_id, character_id])
+}
+
+model BoardingAction {
+  id                  Int           @id @default(autoincrement())
+  session_id          Int           @unique
+  session             CombatSession @relation(fields: [session_id], references: [id])
+  attacker_object_id  Int
+  defender_object_id  Int
+  phase               String        @default("RESOLUTION")
+  // 'RESOLUTION'|'PACIFICATION'
+  rounds_remaining    Int?
+  pacification_timer  Int?
+  pacification_paused Boolean       @default(false)
+  carry_forward_dm    Int           @default(0)
+}
+
+model CombatConfig {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model CharacterCombatRole {
+  id           Int           @id @default(autoincrement())
+  session_id   Int
+  session      CombatSession @relation(fields: [session_id], references: [id])
+  character_id Int
+  character    Character     @relation(fields: [character_id], references: [id])
+  role         String
+  // 'CAPTAIN'|'PILOT'|'GUNNER'|'ENGINEER'|'SENSOR OPERATOR'|'MARINE'|'PASSENGER'
+  mount_id     Int?
+  // only populated when role = 'GUNNER'
+  confirmed    Boolean       @default(false)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  @@unique([session_id, character_id])
 }
 
 model EventLog {
