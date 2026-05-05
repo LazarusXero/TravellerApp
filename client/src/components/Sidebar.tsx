@@ -2,6 +2,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useHealth } from '../hooks/useHealth';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../hooks/useApi';
 
 // ── Nav tree types ────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ interface ChildNode {
   to: string;
   label: string;
   placeholder?: boolean;
+  combatGated?: boolean;
 }
 
 type NavNode = LeafNode | SectionNode;
@@ -73,6 +75,17 @@ const GM_NAV: NavNode[] = [
       { to: '/gm/ship/berths-passengers',label: 'Berths / Passengers', placeholder: true },
       { to: '/gm/ship/weapons',     label: 'Weapons',     placeholder: true },
       { to: '/gm/ship/combat',      label: 'Combat',      placeholder: true },
+    ],
+  },
+  {
+    kind: 'section', label: 'Combat', icon: '⊕', storageKey: 'gm_combat',
+    children: [
+      { to: '/combat/setup',       label: 'Setup' },
+      { to: '/combat/initiative',  label: 'Initiative',       combatGated: true },
+      { to: '/combat/manoeuvre',   label: 'Manoeuvre',        combatGated: true },
+      { to: '/combat/attack',      label: 'Attack / Reaction', combatGated: true },
+      { to: '/combat/action',      label: 'Action / Reaction', combatGated: true },
+      { to: '/combat/resolution',  label: 'Resolution',       combatGated: true },
     ],
   },
   { kind: 'link', to: '/gm/npcs',     label: 'NPCs',     icon: '◎', placeholder: true },
@@ -136,6 +149,16 @@ const PLAYER_NAV: NavNode[] = [
       { to: '/player/ship/combat',           label: 'Combat',            placeholder: true },
     ],
   },
+  {
+    kind: 'section', label: 'Combat', icon: '⊕', storageKey: 'player_combat',
+    children: [
+      { to: '/combat/setup',      label: 'Setup' },
+      { to: '/combat/initiative', label: 'Initiative',        combatGated: true },
+      { to: '/combat/manoeuvre',  label: 'Manoeuvre',         combatGated: true },
+      { to: '/combat/attack',     label: 'Attack / Reaction', combatGated: true },
+      { to: '/combat/action',     label: 'Action / Reaction', combatGated: true },
+    ],
+  },
   { kind: 'link', to: '/player/npcs',     label: 'NPCs',     icon: '◎', placeholder: true },
   { kind: 'link', to: '/player/factions', label: 'Factions', icon: '⬡', placeholder: true },
 ];
@@ -172,7 +195,15 @@ function NavLeaf({ node, onClose }: { node: LeafNode; onClose: () => void }) {
   );
 }
 
-function NavSection({ node, onClose }: { node: SectionNode; onClose: () => void }) {
+function NavSection({
+  node,
+  onClose,
+  combatActive,
+}: {
+  node: SectionNode;
+  onClose: () => void;
+  combatActive: boolean;
+}) {
   const location = useLocation();
   const storageKey = `nexus_nav_${node.storageKey}`;
 
@@ -236,6 +267,17 @@ function NavSection({ node, onClose }: { node: SectionNode; onClose: () => void 
                 </div>
               );
             }
+            if (child.combatGated && !combatActive) {
+              return (
+                <div
+                  key={child.to}
+                  title="No active combat session"
+                  className="px-2 py-1.5 text-xs text-gray-700 cursor-not-allowed select-none rounded"
+                >
+                  {child.label}
+                </div>
+              );
+            }
             return (
               <NavLink
                 key={child.to}
@@ -269,6 +311,34 @@ export function Sidebar({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
 
   const navNodes = isGM ? GM_NAV : PLAYER_NAV;
+
+  const [combatActive, setCombatActive] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkCombat = async () => {
+      try {
+        const gameRes = await apiFetch<{ id: number } | null>('/api/game');
+        if (!gameRes.success || !gameRes.data) return;
+        const sessionRes = await apiFetch<{ id: number } | null>(
+          `/api/combat/session/active?game_id=${gameRes.data.id}`,
+        );
+        if (!cancelled) {
+          setCombatActive(!!(sessionRes.success && sessionRes.data));
+        }
+      } catch {
+        // silently fail — nav defaults to gated
+      }
+    };
+
+    checkCombat();
+    const interval = setInterval(checkCombat, 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -319,7 +389,12 @@ export function Sidebar({ onClose }: { onClose: () => void }) {
           node.kind === 'link' ? (
             <NavLeaf key={node.to} node={node} onClose={onClose} />
           ) : (
-            <NavSection key={node.storageKey} node={node} onClose={onClose} />
+            <NavSection
+              key={node.storageKey}
+              node={node}
+              onClose={onClose}
+              combatActive={combatActive}
+            />
           )
         )}
       </nav>

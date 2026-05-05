@@ -626,6 +626,7 @@ router.post('/:id/train-skill', async (req: Request, res: Response, next: NextFu
             points_awarded: 1,
             source: 'training',
             skill_name,
+            game_day: gameDay,
           },
         });
 

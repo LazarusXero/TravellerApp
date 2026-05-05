@@ -31,6 +31,17 @@ import { PlayerStorePage } from './pages/player/Store';
 import { PlayerBlackMarketPage } from './pages/player/BlackMarket';
 import { ActiveCharacterBanner } from './components/ActiveCharacterBanner';
 import { NotFound } from './pages/NotFound';
+import { GMCombatSetup } from './pages/combat/GMCombatSetup';
+import { GMCombatInitiative } from './pages/combat/GMCombatInitiative';
+import { GMCombatManoeuvre } from './pages/combat/GMCombatManoeuvre';
+import { GMCombatAttack } from './pages/combat/GMCombatAttack';
+import { GMCombatAction } from './pages/combat/GMCombatAction';
+import { GMCombatResolution } from './pages/combat/GMCombatResolution';
+import { PlayerCombatSetup } from './pages/combat/PlayerCombatSetup';
+import { PlayerCombatInitiative } from './pages/combat/PlayerCombatInitiative';
+import { PlayerCombatManoeuvre } from './pages/combat/PlayerCombatManoeuvre';
+import { PlayerCombatAttack } from './pages/combat/PlayerCombatAttack';
+import { PlayerCombatAction } from './pages/combat/PlayerCombatAction';
 
 function AppLayout({
   children,
@@ -93,6 +104,24 @@ function RootRedirect() {
   const { player } = useAuth();
   if (!player) return <Navigate to="/login" replace />;
   return <Navigate to={player.role === 'gm' ? '/gm' : '/player'} replace />;
+}
+
+// Renders the correct component based on role. GM-only routes redirect players.
+function CombatRoute({
+  gmPage,
+  playerPage,
+}: {
+  gmPage: React.ReactNode;
+  playerPage?: React.ReactNode;
+}) {
+  const { player, isGM } = useAuth();
+  if (!player) return <Navigate to="/login" replace />;
+  if (!playerPage && !isGM) return <Navigate to="/player" replace />;
+  return (
+    <AppLayout showBanner={!isGM}>
+      {isGM ? gmPage : playerPage}
+    </AppLayout>
+  );
 }
 
 export default function App() {
@@ -341,6 +370,32 @@ export default function App() {
                   </AppLayout>
                 </ProtectedRoute>
               }
+            />
+
+            {/* Combat routes — shared paths, role-aware rendering */}
+            <Route
+              path="/combat/setup"
+              element={<CombatRoute gmPage={<GMCombatSetup />} playerPage={<PlayerCombatSetup />} />}
+            />
+            <Route
+              path="/combat/initiative"
+              element={<CombatRoute gmPage={<GMCombatInitiative />} playerPage={<PlayerCombatInitiative />} />}
+            />
+            <Route
+              path="/combat/manoeuvre"
+              element={<CombatRoute gmPage={<GMCombatManoeuvre />} playerPage={<PlayerCombatManoeuvre />} />}
+            />
+            <Route
+              path="/combat/attack"
+              element={<CombatRoute gmPage={<GMCombatAttack />} playerPage={<PlayerCombatAttack />} />}
+            />
+            <Route
+              path="/combat/action"
+              element={<CombatRoute gmPage={<GMCombatAction />} playerPage={<PlayerCombatAction />} />}
+            />
+            <Route
+              path="/combat/resolution"
+              element={<CombatRoute gmPage={<GMCombatResolution />} />}
             />
 
             {/* 404 */}
